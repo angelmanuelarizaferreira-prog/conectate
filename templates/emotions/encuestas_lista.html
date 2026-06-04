@@ -1,0 +1,36 @@
+{% extends 'base/base.html' %}
+{% block title %}Encuestas{% endblock %}
+{% block page_title %}Encuestas de Bienestar{% endblock %}
+{% block page_subtitle %}Comparte tu perspectiva sobre el ambiente del curso{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+  <div style="display:flex;justify-content:space-between;align-items:center" class="fade-up">
+    <span style="font-size:.82rem;color:var(--muted)">{{ encuestas.count }} encuesta(s)</span>
+    {% if not user.es_estudiante %}<a href="{% url 'emotions:encuesta_crear' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Nueva encuesta</a>{% endif %}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem" class="fade-up fade-up-1">
+    {% for enc in encuestas %}
+    <a href="{% url 'emotions:encuesta_detalle' enc.pk %}" style="text-decoration:none;color:var(--ink)">
+      <div class="card" style="padding:1.5rem;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
+          <div style="font-size:2rem">{% if enc.tipo == 'escala' %}<i class="bi bi-sliders"></i>{% elif enc.tipo == 'opciones' %}<i class="bi bi-check2-square" style="color:#28a745"></i>{% else %}<i class="bi bi-chat-dots-fill"></i>{% endif %}</div>
+          {% if user.es_estudiante %}
+            {% if enc.pk in ids_respondidas %}<span class="chip chip-success"><i class="bi bi-check-lg"></i> Respondida</span>
+            {% else %}<span class="chip chip-warn">Pendiente</span>{% endif %}
+          {% else %}<span class="chip chip-info">{{ enc.total_respuestas }} resp.</span>{% endif %}
+        </div>
+        <div style="font-weight:700;font-size:.92rem;margin-bottom:.3rem">{{ enc.titulo }}</div>
+        {% if enc.descripcion %}<div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5">{{ enc.descripcion|truncatechars:80 }}</div>{% endif %}
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span class="chip chip-dark">{% if enc.tipo == 'escala' %}Escala 1-5{% elif enc.tipo == 'opciones' %}Opciones{% else %}Texto libre{% endif %}</span>
+          {% if enc.anonima %}<span class="chip chip-dark"><i class="bi bi-incognito"></i> An&oacute;nima</span>{% endif %}
+          {% if enc.fecha_limite %}<span class="chip chip-dark">Limite: {{ enc.fecha_limite|date:"d/m" }}</span>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="empty" style="grid-column:1/-1"><span class="empty-ico"><i class="bi bi-clipboard2-fill"></i></span><div class="empty-title">Sin encuestas</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends 'base/base.html' %}
+{% block title %}Panel Profesor{% endblock %}
+{% block page_title %}Panel del Profesor{% endblock %}
+{% block page_subtitle %}Monitoreo emocional de tus estudiantes{% endblock %}
+{% block extra_css %}
+<style>
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.kpi{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem;
+  position:relative;overflow:hidden;
+}
+.kpi-glow{
+  position:absolute;top:-30px;right:-30px;
+  width:100px;height:100px;border-radius:50%;
+  filter:blur(40px);opacity:.15;
+}
+.kpi-val{font-family:'Syne',sans-serif;font-size:2rem;color:var(--ink);line-height:1;margin:0.4rem 0 .25rem}
+.kpi-lbl{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.kpi-delta{font-size:.75rem;font-weight:600;margin-top:.35rem}
+
+.section-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.student-row{
+  display:flex;align-items:center;gap:.85rem;
+  padding:.65rem .75rem;border-radius:10px;
+  transition:background .15s;
+}
+.student-row:hover{background:rgba(124,110,255,.04)}
+.s-ava{
+  width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.75rem;color:#fff;flex-shrink:0;
+  background:var(--grd);
+}
+.alert-item{
+  display:flex;align-items:flex-start;gap:.85rem;
+  padding:.85rem 1rem;
+  border-left:3px solid transparent;
+  transition:background .15s;
+}
+.alert-item:hover{background:rgba(224,40,79,.03)}
+.alert-item.alta{border-left-color:#e0284f}
+.alert-item.media{border-left-color:#f5b800}
+.quick-act{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.8rem 1rem;border-radius:var(--r2);
+  border:1.5px solid var(--border);background:var(--card);
+  text-decoration:none;color:var(--ink);font-weight:600;font-size:.83rem;
+  transition:all .18s;
+}
+.quick-act:hover{border-color:var(--accent);color:var(--accent);transform:translateX(3px)}
+.quick-act-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <!-- KPIs -->
+  <div class="kpi-grid fade-up">
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#7c6eff"></div>
+      <div class="kpi-lbl">Estudiantes</div>
+      <div class="kpi-val">{{ total_estudiantes }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#00d4aa"></div>
+      <div class="kpi-lbl">Promedio hoy</div>
+      <div class="kpi-val">{{ promedio_hoy|default:"—" }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#ffb340"></div>
+      <div class="kpi-lbl">Participaci&oacute;n</div>
+      <div class="kpi-val">{{ participacion_hoy }}<span style="font-size:1.2rem">%</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#e0284f"></div>
+      <div class="kpi-lbl">Alertas activas</div>
+      <div class="kpi-val" style="color:{% if total_alertas > 0 %}#e0284f{% else %}var(--ink){% endif %}">{{ total_alertas }}</div>
+    </div>
+  </div>
+
+  <!-- Grafica + emociones hoy -->
+  <div class="section-grid fade-up fade-up-1">
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-graph-up-arrow"></i> Promedio grupal — 7 d&iacute;as</span></div>
+      <div style="padding:1.25rem;padding-top:.75rem">
+        <canvas id="gSemanal" height="130"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-heart-fill" style="color:#7c6eff"></i> Distribuci&oacute;n emocional hoy</span></div>
+      <div style="padding:1.25rem;display:flex;align-items:center;justify-content:center">
+        <canvas id="gEmociones" height="160" style="max-width:240px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas + Sin registrar + acciones rapidas -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 280px;gap:1.25rem" class="fade-up fade-up-2">
+
+    <!-- Alertas -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title" style="color:{% if alertas %}#e0284f{% else %}var(--ink){% endif %}">
+          <i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i> Alertas{% if alertas %} ({{ alertas.count }}){% endif %}
+        </span>
+        <a href="{% url 'emotions:alertas' %}" class="btn btn-ghost btn-xs">Ver todas</a>
+      </div>
+      <div>
+        {% for a in alertas|slice:":5" %}
+        <div class="alert-item {% if a.prioridad == 'alta' %}alta{% else %}media{% endif %}">
+          <div style="font-size:1.1rem;flex-shrink:0">{% if a.prioridad == 'alta' %}<i class="bi bi-circle-fill" style="color:#e0284f"></i>{% else %}<i class="bi bi-circle-fill" style="color:#f5b800"></i>{% endif %}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:.82rem">
+              <a href="{% url 'accounts:perfil_estudiante' a.estudiante.pk %}" style="color:var(--ink);text-decoration:none">{{ a.estudiante.get_full_name }}</a>
+            </div>
+            <div style="font-size:.73rem;color:var(--muted)">{{ a.get_tipo_display }}</div>
+          </div>
+          <a href="{% url 'accounts:perfil_estudiante' a.estudiante.pk %}" class="btn btn-ghost btn-xs">Ver</a>
+        </div>
+        {% empty %}
+        <div style="padding:2.5rem;text-align:center">
+          <div style="font-size:2rem;margin-bottom:.5rem"><i class="bi bi-check-circle-fill" style="color:#28a745"></i></div>
+          <div style="font-size:.82rem;color:var(--muted)">Sin alertas activas</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Sin registrar hoy -->
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-bell-fill"></i> Sin registrar hoy ({{ sin_registrar|length }})</span></div>
+      <div style="padding:.5rem 0;max-height:280px;overflow-y:auto">
+        {% for est in sin_registrar %}
+        <div class="student-row">
+          <div class="s-ava">{{ est.first_name|first|upper }}{{ est.last_name|first|upper }}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:.82rem">{{ est.get_full_name }}</div>
+            <div style="font-size:.72rem;color:var(--muted)">@{{ est.username }}</div>
+          </div>
+          <a href="{% url 'accounts:perfil_estudiante' est.pk %}" class="btn btn-ghost btn-xs">Ver</a>
+        </div>
+        {% empty %}
+        <div style="padding:2.5rem;text-align:center">
+          <div style="font-size:2rem;margin-bottom:.5rem"><i class="bi bi-stars"></i></div>
+          <div style="font-size:.82rem;color:var(--muted)">Todos registraron hoy</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Acciones rapidas -->
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-lightning-charge-fill"></i> Acciones r&aacute;pidas</span></div>
+      <div style="padding:.75rem;display:flex;flex-direction:column;gap:.5rem">
+        <a href="{% url 'emotions:semaforo' %}" class="quick-act">
+          <div class="quick-act-ico" style="background:rgba(0,184,122,.1)"><i class="bi bi-stoplights-fill" style="color:#00b87a"></i></div>
+          Sem&aacute;foro del grupo
+        </a>
+        <a href="{% url 'emotions:calendario_grupo' %}" class="quick-act">
+          <div class="quick-act-ico" style="background:rgba(124,110,255,.1)"><i class="bi bi-calendar-month-fill" style="color:var(--accent)"></i></div>
+          Calendario emocional
+        </a>
+        <a href="{% url 'emotions:resumen_grupo' %}" class="quick-act">
+          <div class="quick-act-ico" style="background:rgba(124,110,255,.1)"><i class="bi bi-people-fill" style="color:var(--accent)"></i></div>
+          Resumen del grupo
+        </a>
+        <a href="{% url 'emotions:informe_selector' %}" class="quick-act">
+          <div class="quick-act-ico" style="background:rgba(0,212,170,.1)"><i class="bi bi-file-earmark-bar-graph-fill" style="color:#00d4aa"></i></div>
+          Generar informe IA
+        </a>
+        <a href="{% url 'emotions:alertas' %}" class="quick-act">
+          <div class="quick-act-ico" style="background:rgba(224,40,79,.1)"><i class="bi bi-bell-fill" style="color:#e0284f"></i></div>
+          Ver alertas
+        </a>
+        <a href="{% url 'activities:crear' %}" class="quick-act">
+          <div class="quick-act-ico" style="background:rgba(255,179,64,.1)"><i class="bi bi-lightning-fill" style="color:#ffb340"></i></div>
+          Nueva actividad
+        </a>
+        {% for c in cursos|slice:":2" %}
+        <a href="{% url 'courses:detalle' c.pk %}" class="quick-act">
+          <div class="quick-act-ico" style="background:rgba(124,110,255,.08)"><i class="bi bi-mortarboard-fill" style="color:var(--accent)"></i></div>
+          {{ c.nombre }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tabla registros hoy -->
+  <div class="card fade-up fade-up-3">
+    <div class="card-hd"><span class="card-hd-title"><i class="bi bi-clipboard2-fill"></i> Registros de hoy ({{ registros_hoy|length }})</span></div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="padding-left:1.5rem">Estudiante</th>
+            <th>Emoci&oacute;n</th>
+            <th>Puntaje</th>
+            <th>Comentario</th>
+            <th>Hora</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reg in registros_hoy %}
+          <tr>
+            <td style="padding-left:1.5rem;font-weight:600">{{ reg.estudiante.get_full_name }}</td>
+            <td><span class="chip chip-{{ reg.emocion }}"><i class="bi {{ reg.get_emoji }}"></i> {{ reg.get_emocion_display }}</span></td>
+            <td>
+              <div class="pdots p{{ reg.puntaje }}">
+                {% for i in "12345" %}<div class="pdot {% if forloop.counter <= reg.puntaje %}on{% endif %}"></div>{% endfor %}
+              </div>
+            </td>
+            <td style="color:var(--muted);font-style:italic;max-width:200px">{{ reg.comentario|truncatechars:45|default:"—" }}</td>
+            <td style="color:var(--muted)">{{ reg.hora_registro|time:"H:i" }}</td>
+            <td><a href="{% url 'accounts:perfil_estudiante' reg.estudiante.pk %}" class="btn btn-ghost btn-xs">Ver perfil</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--muted)">Ning&uacute;n estudiante ha registrado hoy</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const semanalCtx=document.getElementById('gSemanal').getContext('2d');
+new Chart(semanalCtx,{
+  type:'line',
+  data:{
+    labels:{{ fechas_semana_json|safe }},
+    datasets:[{
+      label:'Promedio',data:{{ promedios_semana_json|safe }},
+      borderColor:'#7c6eff',backgroundColor:'rgba(124,110,255,.08)',
+      fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#7c6eff',spanGaps:true,
+      pointHoverRadius:7,borderWidth:2.5,
+    }]
+  },
+  options:{
+    responsive:true,
+    scales:{
+      y:{min:0,max:5,ticks:{stepSize:1,font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},
+      x:{ticks:{font:{size:11}},grid:{display:false}}
+    },
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c1c2e',padding:10,cornerRadius:8}}
+  }
+});
+const em={{ emociones_hoy_json|safe }};
+new Chart(document.getElementById('gEmociones').getContext('2d'),{
+  type:'doughnut',
+  data:{
+    labels:['Feliz','Tranquilo','Estresado','Triste','Enojado'],
+    datasets:[{data:[em.feliz,em.tranquilo,em.estresado,em.triste,em.enojado],
+      backgroundColor:['#00b87a','#17a2b8','#f5b800','#8884a8','#e0284f'],
+      borderWidth:0,hoverOffset:6}]
+  },
+  options:{
+    responsive:true,cutout:'65%',
+    plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12,boxHeight:8}}}
+  }
+});
+</script>
+{% endblock %}

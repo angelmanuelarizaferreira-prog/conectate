@@ -1,0 +1,401 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ curso.nombre }}{% endblock %}
+{% block page_title %}{{ curso.nombre }}{% endblock %}
+{% block page_subtitle %}
+  {{ curso.get_grado_display }}{% if curso.seccion %}, Sección {{ curso.seccion }}{% endif %}
+  {% if curso.profesor %} &bull; Prof. {{ curso.profesor.get_full_name }}{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.est-row{
+  display:flex;align-items:center;gap:.85rem;
+  padding:.75rem 1.25rem;border-bottom:1px solid var(--border);
+  transition:background .12s;
+}
+.est-row:last-child{border-bottom:none}
+.est-row:hover{background:rgba(124,110,255,.03)}
+.est-ava{
+  width:34px;height:34px;border-radius:10px;
+  background:rgba(124,110,255,.1);color:var(--accent);
+  font-weight:800;font-size:.78rem;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;
+}
+/* Tarjetas de acceso rápido para estudiante */
+.curso-action{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem;
+  display:flex;align-items:center;gap:1rem;
+  text-decoration:none;color:var(--ink);
+  transition:transform .16s,box-shadow .16s,border-color .16s;
+  box-shadow:var(--shadow2);
+}
+.curso-action:hover{
+  transform:translateY(-3px);box-shadow:var(--shadow);
+  border-color:rgba(124,110,255,.3);color:var(--ink);
+}
+.curso-action-ico{
+  width:46px;height:46px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;flex-shrink:0;
+}
+.curso-action-title{font-weight:700;font-size:.88rem;color:var(--ink)}
+.curso-action-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+/* Banner bienvenida estudiante */
+.curso-hero{
+  background:var(--grd2);border-radius:var(--r);
+  padding:1.75rem 2rem;position:relative;overflow:hidden;
+}
+.curso-hero::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(124,110,255,.2);filter:blur(40px);pointer-events:none;
+}
+.curso-hero::after{
+  content:'';position:absolute;bottom:-30px;left:20%;
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(255,107,157,.15);filter:blur(30px);pointer-events:none;
+}
+.curso-code-box{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;padding:.4rem .9rem;
+  font-family:monospace;font-size:.9rem;color:rgba(255,255,255,.9);
+  cursor:pointer;user-select:all;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+
+  {% if user.es_estudiante %}
+  <!-- ── VISTA ESTUDIANTE ── -->
+
+  <!-- Hero del curso -->
+  <div class="curso-hero fade-up">
+    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:900;color:#fff;line-height:1.1">
+          {{ curso.nombre }}
+        </div>
+        <div style="color:rgba(255,255,255,.6);font-size:.82rem;margin-top:.4rem">
+          {% if curso.profesor %}Prof. {{ curso.profesor.get_full_name }} &bull; {% endif %}
+          {{ estudiantes_data|length }} compañero{% if estudiantes_data|length != 1 %}s{% endif %}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.65rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:.3rem">Código del grupo</div>
+        <div class="curso-code-box" title="Clic para copiar" onclick="navigator.clipboard.writeText('{{ curso.codigo }}');this.textContent='¡Copiado!'">
+          <i class="bi bi-key-fill" style="color:rgba(255,255,255,.5)"></i>{{ curso.codigo }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado emocional del grupo hoy -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" class="fade-up fade-up-1">
+    <div class="card" style="padding:0">
+      <div class="card-hd">
+        <span class="card-hd-title"><i class="bi bi-pie-chart-fill" style="color:var(--accent)"></i> Ambiente del grupo hoy</span>
+      </div>
+      <div style="padding:1rem;display:flex;justify-content:center">
+        <canvas id="gEmo" height="160" style="max-width:180px"></canvas>
+      </div>
+    </div>
+    <div class="card" style="padding:1.25rem">
+      <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.85rem">Tu grupo hoy</div>
+      {% with prom=promedio_hoy %}
+      {% if prom %}
+      <div style="font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:900;color:{% if prom >= 3.8 %}#00b87a{% elif prom >= 3.0 %}#f5b800{% else %}#e0284f{% endif %};line-height:1">{{ prom }}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.25rem">promedio emocional</div>
+      <div style="margin-top:1rem;font-size:.8rem;color:var(--ink)">
+        {% if prom >= 3.8 %}🟢 El grupo está en un buen momento hoy
+        {% elif prom >= 3.0 %}🟡 Hay algo de tensión en el grupo
+        {% else %}🔴 El grupo necesita apoyo hoy
+        {% endif %}
+      </div>
+      {% else %}
+      <div style="color:var(--muted);font-size:.85rem;text-align:center;padding:1rem">
+        <div style="font-size:1.8rem;margin-bottom:.5rem">💤</div>
+        Nadie ha registrado aún hoy
+      </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+
+  <!-- Accesos rápidos del curso -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem" class="fade-up fade-up-2">
+    <a href="{% url 'emotions:foro' curso.pk %}" class="curso-action">
+      <div class="curso-action-ico" style="background:rgba(124,110,255,.12)">
+        <i class="bi bi-chat-square-heart-fill" style="color:#7c6eff"></i>
+      </div>
+      <div>
+        <div class="curso-action-title">Foro del grupo</div>
+        <div class="curso-action-sub">Comparte con tus compañeros</div>
+      </div>
+    </a>
+    <a href="{% url 'activities:lista' %}" class="curso-action">
+      <div class="curso-action-ico" style="background:rgba(255,179,64,.12)">
+        <i class="bi bi-lightning-charge-fill" style="color:#ffb340"></i>
+      </div>
+      <div>
+        <div class="curso-action-title">Actividades</div>
+        <div class="curso-action-sub">{{ curso.actividades.count }} disponible{% if curso.actividades.count != 1 %}s{% endif %}</div>
+      </div>
+    </a>
+    <a href="{% url 'emotions:registrar' %}" class="curso-action">
+      <div class="curso-action-ico" style="background:rgba(255,107,157,.12)">
+        <i class="bi bi-heart-pulse-fill" style="color:#ff6b9d"></i>
+      </div>
+      <div>
+        <div class="curso-action-title">Registrar emoción</div>
+        <div class="curso-action-sub">¿Cómo te sientes hoy?</div>
+      </div>
+    </a>
+    <a href="{% url 'emotions:mapa_calor' %}?curso={{ curso.pk }}" class="curso-action">
+      <div class="curso-action-ico" style="background:rgba(0,212,170,.12)">
+        <i class="bi bi-grid-3x3-gap-fill" style="color:#00d4aa"></i>
+      </div>
+      <div>
+        <div class="curso-action-title">Mapa del grupo</div>
+        <div class="curso-action-sub">Tendencias del mes</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Actividades del curso -->
+  <div class="card fade-up fade-up-3" style="overflow:hidden">
+    <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between">
+      <span class="card-hd-title"><i class="bi bi-lightning-charge-fill" style="color:#ffb340"></i> Actividades del curso — {{ actividades|length }}</span>
+    </div>
+    {% for act in actividades %}
+    {% if act.id in ids_respondidas %}
+    <a href="{% url 'activities:detalle' act.pk %}" style="display:flex;align-items:center;gap:.85rem;padding:.75rem 1.25rem;border-bottom:1px solid var(--border);text-decoration:none;color:var(--ink);background:rgba(0,184,122,.03)">
+    {% else %}
+    <a href="{% url 'activities:detalle' act.pk %}" style="display:flex;align-items:center;gap:.85rem;padding:.75rem 1.25rem;border-bottom:1px solid var(--border);text-decoration:none;color:var(--ink);transition:background .12s" onmouseenter="this.style.background='rgba(124,110,255,.04)'" onmouseleave="this.style.background=''">
+    {% endif %}
+      <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,179,64,.12);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">{{ act.get_tipo_emoji }}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.85rem;color:var(--ink)">{{ act.titulo }}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:2px">{{ act.get_tipo_display }}{% if act.fecha_limite %} &bull; Límite: {{ act.fecha_limite|date:"d/m/Y" }}{% endif %}</div>
+      </div>
+      <div style="flex-shrink:0">
+        {% if act.id in ids_respondidas %}
+        <span style="font-size:.75rem;color:#00b87a;font-weight:700"><i class="bi bi-check-circle-fill"></i> Respondida</span>
+        {% else %}
+        <span style="font-size:.75rem;color:var(--accent);font-weight:700">Pendiente <i class="bi bi-arrow-right-short"></i></span>
+        {% endif %}
+      </div>
+    </a>
+    {% empty %}
+    <div style="padding:2.5rem;text-align:center;color:var(--muted)">
+      <i class="bi bi-lightning-charge" style="font-size:2rem;opacity:.25;display:block;margin-bottom:.75rem"></i>
+      No hay actividades publicadas aún
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Compañeros -->
+  <div class="card fade-up fade-up-3" style="overflow:hidden">
+    <div class="card-hd">
+      <span class="card-hd-title"><i class="bi bi-people-fill" style="color:var(--accent)"></i> Compañeros — {{ estudiantes_data|length }}</span>
+    </div>
+    {% for d in estudiantes_data %}
+    <div class="est-row">
+      <div class="est-ava">{{ d.estudiante.first_name|first|upper }}{{ d.estudiante.last_name|first|upper }}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.85rem;color:var(--ink)">{{ d.estudiante.get_full_name }}</div>
+      </div>
+      <div>
+        {% if d.registro_hoy %}
+        <span class="chip chip-{{ d.registro_hoy.emocion }}" style="font-size:.72rem">
+          <i class="bi {{ d.registro_hoy.get_emoji }}"></i> {{ d.registro_hoy.get_emocion_display }}
+        </span>
+        {% else %}
+        <span style="font-size:.75rem;color:var(--muted);font-style:italic">Sin registrar</span>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div style="padding:2.5rem;text-align:center;color:var(--muted)">Sin compañeros inscritos aún</div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- ── VISTA PROFESOR / ADMIN ── -->
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem" class="fade-up">
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(124,110,255,.1)"><i class="bi bi-people-fill"></i></div>
+      <div><div class="stat-val">{{ estudiantes_data|length }}</div><div class="stat-lbl">Estudiantes</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(0,212,170,.1)"><i class="bi bi-star-fill" style="color:#ffb340"></i></div>
+      <div><div class="stat-val">{{ promedio_hoy|default:"—" }}</div><div class="stat-lbl">Promedio hoy</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(255,179,64,.1)"><i class="bi bi-key-fill"></i></div>
+      <div>
+        <div class="stat-val" style="font-size:1.2rem;font-family:monospace">{{ curso.codigo }}</div>
+        <div class="stat-lbl">Código de acceso</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(255,107,157,.1)"><i class="bi bi-lightning-fill"></i></div>
+      <div><div class="stat-val">{{ curso.actividades.count }}</div><div class="stat-lbl">Actividades</div></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 290px;gap:1.25rem;align-items:start" class="fade-up fade-up-1">
+
+    <!-- Distribución emocional hoy -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title"><i class="bi bi-pie-chart-fill"></i> Distribución emocional hoy</span>
+        <a href="{% url 'emotions:resumen_grupo' %}?curso={{ curso.pk }}" class="btn btn-ghost btn-sm">Resumen completo</a>
+      </div>
+      <div style="padding:1rem;display:flex;justify-content:center">
+        <canvas id="gEmo" height="180" style="max-width:220px"></canvas>
+      </div>
+    </div>
+
+    <!-- Panel gestión profesor -->
+    <div style="display:flex;flex-direction:column;gap:.85rem">
+      <div class="card" style="padding:1.25rem">
+        <div style="font-weight:700;font-size:.85rem;margin-bottom:.85rem;color:var(--ink)">
+          <i class="bi bi-person-plus-fill" style="color:var(--accent)"></i> Inscribir estudiante
+        </div>
+        <form method="post" action="{% url 'courses:inscribir' curso.pk %}" style="display:flex;flex-direction:column;gap:.5rem">
+          {% csrf_token %}
+          <input type="text" name="buscar" class="field-input" placeholder="Usuario del estudiante...">
+          <button type="submit" class="btn btn-primary btn-sm" style="justify-content:center">
+            <i class="bi bi-plus-circle-fill"></i> Inscribir
+          </button>
+        </form>
+      </div>
+      <div class="card" style="padding:1.25rem">
+        <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem;color:var(--ink)">
+          <i class="bi bi-lightning-charge-fill" style="color:var(--accent)"></i> Acciones
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.45rem">
+          <a href="{% url 'activities:crear' %}" class="btn btn-ghost btn-sm"><i class="bi bi-plus-circle"></i> Nueva actividad</a>
+          <a href="{% url 'emotions:foro' curso.pk %}" class="btn btn-ghost btn-sm"><i class="bi bi-chat-square-heart-fill"></i> Foro del grupo</a>
+          <a href="{% url 'emotions:resumen_grupo' %}?curso={{ curso.pk }}" class="btn btn-ghost btn-sm"><i class="bi bi-bar-chart-fill"></i> Monitoreo</a>
+          <a href="{% url 'gestion:editar_curso' curso.pk %}" class="btn btn-ghost btn-sm"><i class="bi bi-pencil-fill"></i> Editar grupo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista estudiantes -->
+  <div class="card fade-up fade-up-2">
+    <div class="card-hd">
+      <span class="card-hd-title"><i class="bi bi-people-fill"></i> Estudiantes — {{ estudiantes_data|length }}</span>
+    </div>
+    {% for d in estudiantes_data %}
+    <div class="est-row">
+      <div class="est-ava">{{ d.estudiante.first_name|first|upper }}{{ d.estudiante.last_name|first|upper }}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.85rem;color:var(--ink)">{{ d.estudiante.get_full_name }}</div>
+        <div style="font-size:.72rem;color:var(--muted)">@{{ d.estudiante.username }}</div>
+      </div>
+      <div style="flex-shrink:0">
+        {% if d.registro_hoy %}
+        <span class="chip chip-{{ d.registro_hoy.emocion }}" style="font-size:.72rem">
+          <i class="bi {{ d.registro_hoy.get_emoji }}"></i> {{ d.registro_hoy.get_emocion_display }}
+        </span>
+        {% else %}
+        <span style="font-size:.75rem;color:var(--muted);font-style:italic">Sin registrar</span>
+        {% endif %}
+      </div>
+      <div style="flex-shrink:0;margin-left:.5rem">
+        {% if d.alertas > 0 %}
+        <span class="chip chip-danger" style="font-size:.72rem"><i class="bi bi-exclamation-triangle-fill"></i> {{ d.alertas }}</span>
+        {% else %}
+        <i class="bi bi-check-circle-fill" style="color:#00b87a;font-size:.9rem"></i>
+        {% endif %}
+      </div>
+      <a href="{% url 'accounts:perfil_estudiante' d.estudiante.pk %}" class="btn btn-ghost btn-xs" style="margin-left:.5rem;flex-shrink:0">Ver</a>
+    </div>
+    {% empty %}
+    <div style="padding:3rem;text-align:center;color:var(--muted)">
+      <i class="bi bi-people-fill" style="font-size:2rem;opacity:.25;display:block;margin-bottom:.75rem"></i>
+      Sin estudiantes inscritos
+    </div>
+    {% endfor %}
+  </div>
+
+
+  <!-- Actividades por semanas (profesor) -->
+  <div class="fade-up" style="display:flex;flex-direction:column;gap:.75rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.15rem">
+      <div style="font-weight:800;font-size:.95rem;color:var(--ink)">
+        <i class="bi bi-calendar-week-fill" style="color:var(--accent)"></i> Contenido por semanas — {{ actividades|length }} actividade{% if actividades|length != 1 %}s{% endif %}
+      </div>
+      <a href="{% url 'activities:crear' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle-fill"></i> Nueva actividad</a>
+    </div>
+
+    {% if semanas_list %}
+    {% for semana in semanas_list %}
+    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div style="display:flex;align-items:center;gap:.85rem;padding:.85rem 1.25rem;background:rgba(124,110,255,.04);border-bottom:1px solid var(--border)">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--grd);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:.88rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ semana.numero }}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;color:var(--ink)">Semana {{ semana.numero }}</div>
+        <span style="font-size:.72rem;color:var(--muted)">{{ semana.actividades|length }} actividade{% if semana.actividades|length != 1 %}s{% endif %}</span>
+        <a href="{% url 'activities:crear' %}" class="btn btn-ghost btn-xs" style="margin-left:auto"><i class="bi bi-plus"></i> Añadir</a>
+      </div>
+      {% for act in semana.actividades %}
+      <a href="{% url 'activities:detalle' act.pk %}" style="display:flex;align-items:center;gap:.85rem;padding:.7rem 1.25rem;border-bottom:1px solid var(--border);text-decoration:none;color:var(--ink);transition:background .12s" onmouseenter="this.style.background='rgba(124,110,255,.04)'" onmouseleave="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:9px;background:rgba(255,179,64,.12);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">{{ act.get_tipo_emoji }}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:.84rem;color:var(--ink)">{{ act.titulo }}</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:1px">{{ act.get_tipo_display }}{% if act.fecha_limite %} &bull; <i class="bi bi-clock"></i> {{ act.fecha_limite|date:"d/m/Y" }}{% endif %}</div>
+        </div>
+        <div style="flex-shrink:0;text-align:right">
+          <div style="font-size:.82rem;font-weight:800;color:var(--accent)">{{ act.total_respuestas }}</div>
+          <div style="font-size:.65rem;color:var(--muted)">resp.</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <a href="{% url 'activities:crear' %}" class="btn btn-ghost" style="border-style:dashed;justify-content:center">
+      <i class="bi bi-plus-circle"></i> Agregar actividad en nueva semana
+    </a>
+    {% else %}
+    <div style="background:var(--card);border:1.5px dashed var(--border);border-radius:var(--r);padding:3rem;text-align:center;color:var(--muted)">
+      <i class="bi bi-calendar-week" style="font-size:2.5rem;opacity:.2;display:block;margin-bottom:.75rem"></i>
+      <div style="font-weight:700;margin-bottom:.35rem">Sin contenido publicado aún</div>
+      <div style="font-size:.83rem;margin-bottom:1rem">Crea actividades por semana para tus estudiantes</div>
+      <a href="{% url 'activities:crear' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle-fill"></i> Crear primera actividad</a>
+    </div>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const em = {{ conteo_emociones|safe }};
+new Chart(document.getElementById('gEmo').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Feliz','Tranquilo','Estresado','Triste','Enojado'],
+    datasets: [{
+      data: [em.feliz, em.tranquilo, em.estresado, em.triste, em.enojado],
+      backgroundColor: ['#00b87a','#17a2b8','#f5b800','#8884a8','#e0284f'],
+      borderWidth: 0, hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true, cutout: '68%',
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 10 } } }
+  }
+});
+</script>
+{% endblock %}

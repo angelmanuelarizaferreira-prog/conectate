@@ -1,0 +1,196 @@
+{% extends 'base/base.html' %}
+{% block title %}Panel Admin{% endblock %}
+{% block page_title %}Panel Administrativo{% endblock %}
+{% block page_subtitle %}Visi&oacute;n general del sistema Conect&aacute;te{% endblock %}
+{% block extra_css %}
+<style>
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;position:relative;overflow:hidden}
+.kpi-glow{position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;filter:blur(40px);opacity:.18;pointer-events:none}
+.kpi-val{font-family:'Syne',sans-serif;font-size:1.8rem;color:var(--ink);line-height:1;margin:.3rem 0 .2rem}
+.kpi-lbl{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.act-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;
+  padding:1.1rem .75rem;border-radius:var(--r);
+  border:1.5px solid var(--border);background:var(--card);
+  text-decoration:none;color:var(--ink);font-weight:700;font-size:.78rem;
+  text-align:center;transition:all .2s;
+}
+.act-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow)}
+.act-btn i{font-size:1.5rem}
+.user-row{display:flex;align-items:center;gap:.85rem;padding:.65rem 1rem;border-bottom:1px solid var(--border);transition:background .12s}
+.user-row:last-child{border-bottom:none}
+.user-row:hover{background:rgba(124,110,255,.03)}
+.u-ava{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:#fff;flex-shrink:0}
+.rol-chip{display:inline-block;padding:2px 8px;border-radius:50px;font-size:.68rem;font-weight:700}
+.rol-admin{background:rgba(224,40,79,.12);color:#e0284f}
+.rol-profesor{background:rgba(124,110,255,.12);color:var(--accent)}
+.rol-estudiante{background:rgba(0,184,122,.12);color:#00b87a}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <!-- KPIs -->
+  <div class="kpi-grid fade-up">
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#7c6eff"></div>
+      <div class="kpi-lbl">Usuarios</div>
+      <div class="kpi-val">{{ total_usuarios }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#00d4aa"></div>
+      <div class="kpi-lbl">Estudiantes</div>
+      <div class="kpi-val">{{ total_estudiantes }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#ffb340"></div>
+      <div class="kpi-lbl">Profesores</div>
+      <div class="kpi-val">{{ total_profesores }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#7c6eff"></div>
+      <div class="kpi-lbl">Cursos activos</div>
+      <div class="kpi-val">{{ total_cursos }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#e0284f"></div>
+      <div class="kpi-lbl">Alertas activas</div>
+      <div class="kpi-val" style="{% if total_alertas > 0 %}color:#e0284f{% endif %}">{{ total_alertas }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-glow" style="background:#00d4aa"></div>
+      <div class="kpi-lbl">Registros hoy</div>
+      <div class="kpi-val">{{ registros_hoy }}</div>
+    </div>
+  </div>
+
+  <!-- Graficas -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem" class="fade-up fade-up-1">
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-bar-chart-fill"></i> Registros emocionales &mdash; &uacute;ltima semana</span></div>
+      <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gRegistros" height="110"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i> Alertas recientes</span>
+        <a href="{% url 'emotions:alertas' %}" class="btn btn-ghost btn-xs">Ver todas</a>
+      </div>
+      <div style="max-height:240px;overflow-y:auto">
+        {% for a in alertas_recientes %}
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border)">
+          <div style="font-weight:600;font-size:.82rem">{{ a.estudiante.get_full_name }}</div>
+          <div style="font-size:.72rem;color:var(--muted)">{{ a.get_tipo_display }} &bull; {{ a.fecha_creacion|date:"d/m H:i" }}</div>
+        </div>
+        {% empty %}
+        <div style="padding:2rem;text-align:center;color:var(--muted);font-size:.82rem">Sin alertas <i class="bi bi-check-circle-fill" style="color:#28a745"></i></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones rapidas -->
+  <div class="fade-up fade-up-2">
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.85rem">Acciones r&aacute;pidas</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:.75rem">
+      <a href="{% url 'gestion:crear_usuario' %}" class="act-btn"><i class="bi bi-person-plus-fill"></i>Nuevo usuario</a>
+      <a href="{% url 'courses:crear' %}" class="act-btn"><i class="bi bi-plus-circle-fill"></i>Crear curso</a>
+      <a href="{% url 'activities:crear' %}" class="act-btn"><i class="bi bi-lightning-fill"></i>Nueva actividad</a>
+      <a href="{% url 'emotions:alertas' %}" class="act-btn"><i class="bi bi-bell-fill"></i>Ver alertas</a>
+      <a href="{% url 'emotions:informe_selector' %}" class="act-btn" style="border-color:rgba(124,110,255,.3);background:rgba(124,110,255,.04)"><i class="bi bi-file-earmark-bar-graph-fill" style="color:var(--accent)"></i>Informe IA</a>
+      <a href="{% url 'emotions:resumen_grupo' %}" class="act-btn"><i class="bi bi-people-fill"></i>Resumen grupo</a>
+      <a href="{% url 'gestion:usuarios' %}" class="act-btn"><i class="bi bi-person-lines-fill"></i>Gestionar usuarios</a>
+      <a href="{% url 'emotions:panel_institucional' %}" class="act-btn" style="border-color:rgba(124,110,255,.3);background:rgba(124,110,255,.04)"><i class="bi bi-building-fill" style="color:var(--accent)"></i>Panel institucional</a>
+      <a href="{% url 'emotions:encuesta_crear' %}" class="act-btn"><i class="bi bi-clipboard2-pulse-fill"></i>Crear encuesta</a>
+      <a href="{% url 'emotions:reto_crear' %}" class="act-btn"><i class="bi bi-flag-fill"></i>Nuevo reto</a>
+      <a href="{% url 'emotions:semaforo' %}" class="act-btn"><i class="bi bi-stoplights-fill"></i>Sem&aacute;foro</a>
+    </div>
+  </div>
+
+  <!-- Cursos + Usuarios recientes -->
+  <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:1.25rem" class="fade-up fade-up-3">
+
+    <!-- Cursos -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title"><i class="bi bi-books"></i> Cursos activos</span>
+        <a href="{% url 'courses:lista' %}" class="btn btn-ghost btn-xs">Ver todos</a>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th style="padding-left:1.25rem">Curso</th><th>Profesor</th><th>Est.</th><th></th></tr></thead>
+          <tbody>
+            {% for c in cursos %}
+            <tr>
+              <td style="padding-left:1.25rem">
+                <div style="font-weight:600;font-size:.83rem">{{ c.nombre }}</div>
+                <div style="font-size:.72rem;color:var(--muted)">{{ c.grado }}</div>
+              </td>
+              <td style="font-size:.8rem;color:var(--muted)">{{ c.profesor.get_full_name|default:"—" }}</td>
+              <td><span class="chip chip-info">{{ c.total_estudiantes }}</span></td>
+              <td><a href="{% url 'courses:detalle' c.pk %}" class="btn btn-ghost btn-xs">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted)">Sin cursos</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Usuarios recientes -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title"><i class="bi bi-person-fill"></i> Usuarios recientes</span>
+        <a href="{% url 'gestion:usuarios' %}" class="btn btn-ghost btn-xs">Ver todos</a>
+      </div>
+      <div>
+        {% for u in todos_usuarios|slice:":8" %}
+        <div class="user-row">
+          <div class="u-ava" style="background:{% if u.rol == 'profesor' %}var(--grd){% else %}linear-gradient(135deg,#00b87a,#00d4aa){% endif %}">
+            {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:.82rem">{{ u.get_full_name|default:u.username }}</div>
+            <div style="font-size:.72rem;color:var(--muted)">@{{ u.username }} &bull; {{ u.date_joined|date:"d/m/Y" }}</div>
+          </div>
+          <span class="rol-chip rol-{{ u.rol }}">{{ u.get_rol_display }}</span>
+          <div style="display:flex;gap:.35rem;margin-left:.5rem">
+            {% if u.rol == 'estudiante' %}
+            <a href="{% url 'accounts:perfil_estudiante' u.pk %}" class="btn btn-ghost btn-xs">Ver</a>
+            {% else %}
+            <a href="{% url 'gestion:editar_usuario' u.pk %}" class="btn btn-ghost btn-xs">Editar</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('gRegistros').getContext('2d'),{
+  type:'bar',
+  data:{
+    labels:{{ fechas_json|safe }},
+    datasets:[{
+      label:'Registros',data:{{ registros_json|safe }},
+      backgroundColor:'rgba(124,110,255,.7)',borderRadius:8,
+      hoverBackgroundColor:'rgba(124,110,255,.9)',
+    }]
+  },
+  options:{
+    responsive:true,
+    scales:{
+      y:{beginAtZero:true,ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},
+      x:{ticks:{font:{size:11}},grid:{display:false}}
+    },
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c1c2e',padding:10,cornerRadius:8}}
+  }
+});
+</script>
+{% endblock %}

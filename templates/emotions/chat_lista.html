@@ -1,0 +1,64 @@
+{% extends 'base/base.html' %}
+{% block title %}Luna IA{% endblock %}
+{% block page_title %}Luna IA <i class="bi bi-heart-fill" style="color:#7c6eff"></i>{% endblock %}
+{% block page_subtitle %}Tu asistente de apoyo emocional{% endblock %}
+{% block extra_css %}
+<style>
+.luna-hero{background:var(--grd2);border-radius:var(--r);padding:2rem;position:relative;overflow:hidden}
+.luna-orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.2}
+.conv-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;cursor:pointer;transition:all .18s;text-decoration:none;color:var(--ink);display:block}
+.conv-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:rgba(124,110,255,.25);color:var(--ink)}
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+  <div class="luna-hero fade-up">
+    <div class="luna-orb" style="width:250px;height:250px;background:#7c6eff;top:-80px;right:-60px"></div>
+    <div class="luna-orb" style="width:180px;height:180px;background:#ff6b9d;bottom:-60px;right:120px"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+      <div style="width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:2rem;border:2px solid rgba(255,255,255,.2);flex-shrink:0"><i class="bi bi-robot"></i></div>
+      <div style="flex:1">
+        <div style="font-family:'Syne',sans-serif;font-size:1.5rem;color:#fff;letter-spacing:-.5px;margin-bottom:.4rem">Hola, soy Luna <i class="bi bi-heart-fill" style="color:#7c6eff"></i></div>
+        <div style="font-size:.88rem;color:rgba(255,255,255,.6);max-width:480px;line-height:1.65;margin-bottom:1rem">Soy tu asistente de apoyo emocional. Estoy aqu&iacute; para escucharte, sin juicios y con total confidencialidad.</div>
+        <form method="post" action="{% url 'emotions:chat_nueva' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn" style="background:#fff;color:var(--accent);font-weight:700"><i class="bi bi-chat-heart-fill"></i> Nueva conversaci&oacute;n</button>
+        </form>
+      </div>
+      <div style="display:none;flex-direction:column;gap:.35rem;text-align:right" class="d-md-flex">
+        <div style="font-size:.75rem;color:rgba(255,255,255,.4)">Disponible siempre</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.4)">100% confidencial</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.4)">Sin juicios</div>
+      </div>
+    </div>
+  </div>
+  <div class="card fade-up fade-up-1" style="padding:.85rem 1.25rem;border-left:4px solid #f5b800;background:rgba(245,184,0,.04)">
+    <div style="display:flex;align-items:start;gap:.75rem;font-size:.83rem;color:#7a5c00">
+      <span style="font-size:1.2rem;flex-shrink:0"><i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i></span>
+      <div><strong>Importante:</strong> Luna es un asistente de apoyo emocional, no un profesional de salud mental. Si est&aacute;s en crisis, habla con un adulto de confianza o tu profesor/a.</div>
+    </div>
+  </div>
+  {% if sesiones %}
+  <div class="fade-up fade-up-2">
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.85rem">Conversaciones anteriores</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem">
+      {% for s in sesiones %}
+      <div style="position:relative">
+        <a href="{% url 'emotions:chat_sesion' s.pk %}" class="conv-card">
+          <div style="font-weight:700;font-size:.88rem;margin-bottom:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.get_titulo }}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem">{{ s.updated_at|date:"d/m/Y H:i" }} &bull; {{ s.mensajes.count }} mensajes</div>
+          {% with u=s.ultimo_mensaje %}{% if u %}
+          <div style="font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{% if u.rol == 'assistant' %}<i class="bi bi-heart-fill" style="color:#7c6eff"></i>{% else %}<i class="bi bi-person-fill"></i>{% endif %} {{ u.contenido }}</div>
+          {% endif %}{% endwith %}
+        </a>
+        <form method="post" action="{% url 'emotions:chat_eliminar' s.pk %}" onsubmit="return confirm('&iquest;Eliminar?')" style="position:absolute;top:.75rem;right:.75rem">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-xs" style="opacity:0;transition:opacity .15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><i class="bi bi-trash-fill"></i></button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

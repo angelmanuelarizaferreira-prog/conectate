@@ -1,0 +1,320 @@
+{% extends 'base/base.html' %}
+{% block title %}Vista Previa Informe{% endblock %}
+{% block page_title %}Informe IA{% endblock %}
+{% block page_subtitle %}{{ curso.nombre }} &mdash; {{ curso.get_grado_display }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.inf-kpi{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.4rem 1.5rem;
+  display:flex;align-items:center;gap:1rem;
+  box-shadow:var(--shadow2);position:relative;overflow:hidden;
+  transition:transform .18s,box-shadow .18s;
+}
+.inf-kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.inf-kpi-glow{
+  position:absolute;top:-20px;right:-20px;
+  width:80px;height:80px;border-radius:50%;
+  filter:blur(30px);opacity:.18;pointer-events:none;
+}
+.inf-kpi-icon{
+  width:48px;height:48px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;flex-shrink:0;
+}
+.inf-kpi-val{
+  font-family:'Syne',sans-serif;font-size:2rem;
+  font-weight:900;line-height:1;color:var(--ink);
+}
+.inf-kpi-lbl{
+  font-size:.68rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.8px;margin-top:2px;
+}
+.periodo-tab{
+  padding:.35rem .9rem;border-radius:50px;font-size:.78rem;
+  font-weight:700;cursor:pointer;text-decoration:none;
+  border:1.5px solid var(--border);color:var(--muted);
+  transition:all .15s;
+}
+.periodo-tab:hover{border-color:var(--accent);color:var(--accent)}
+.periodo-tab.active{
+  background:var(--grd);color:#fff;border-color:transparent;
+  box-shadow:0 4px 12px rgba(124,110,255,.3);
+}
+.inf-tbl{width:100%;border-collapse:collapse}
+.inf-tbl th{
+  font-size:.65rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.8px;
+  padding:.75rem 1rem;border-bottom:1.5px solid var(--border);
+  white-space:nowrap;
+}
+.inf-tbl td{
+  padding:.85rem 1rem;border-bottom:1px solid var(--border);
+  font-size:.83rem;color:var(--ink);vertical-align:middle;
+}
+.inf-tbl tbody tr{transition:background .12s}
+.inf-tbl tbody tr:hover{background:rgba(124,110,255,.04)}
+.inf-tbl tbody tr:last-child td{border-bottom:none}
+.row-danger td:first-child{border-left:3px solid #e0284f}
+.row-good   td:first-child{border-left:3px solid #00b87a}
+.row-warn   td:first-child{border-left:3px solid #f5b800}
+.prom-pill{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:46px;padding:.22rem .7rem;border-radius:50px;
+  font-weight:800;font-size:.8rem;font-family:'Syne',sans-serif;
+}
+.prom-critico  {background:rgba(224,40,79,.12);color:#e0284f}
+.prom-bajo     {background:rgba(245,184,0,.12);color:#b38700}
+.prom-regular  {background:rgba(255,179,64,.10);color:#c27000}
+.prom-bueno    {background:rgba(0,184,122,.12);color:#00855a}
+.prom-excelente{background:rgba(0,212,170,.15);color:#00705a}
+.tend-up  {color:#00b87a;font-weight:700;font-size:.8rem}
+.tend-down{color:#e0284f;font-weight:700;font-size:.8rem}
+.tend-eq  {color:var(--muted);font-weight:600;font-size:.8rem}
+.alerta-chip{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.18rem .55rem;border-radius:50px;font-size:.72rem;font-weight:700;
+}
+.alerta-chip.ok  {background:rgba(0,184,122,.1);color:#00855a}
+.alerta-chip.warn{background:rgba(224,40,79,.1);color:#e0284f}
+.dl-banner{
+  background:var(--grd2);border-radius:var(--r);
+  padding:2rem 2.5rem;display:flex;align-items:center;
+  justify-content:space-between;gap:1.5rem;flex-wrap:wrap;
+  position:relative;overflow:hidden;
+}
+.dl-banner::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;border-radius:50%;
+  background:rgba(124,110,255,.15);filter:blur(40px);pointer-events:none;
+}
+.dl-banner::after{
+  content:'';position:absolute;bottom:-40px;left:30%;
+  width:150px;height:150px;border-radius:50%;
+  background:rgba(255,107,157,.1);filter:blur(35px);pointer-events:none;
+}
+.est-avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--grd);display:inline-flex;align-items:center;
+  justify-content:center;font-size:.72rem;font-weight:800;color:#fff;
+  flex-shrink:0;
+}
+.api-warn{
+  background:rgba(245,184,0,.08);border:1.5px solid rgba(245,184,0,.3);
+  border-radius:var(--r);padding:1rem 1.25rem;
+  display:flex;align-items:center;gap:.85rem;
+}
+.ver-link{
+  font-size:.72rem;font-weight:700;color:var(--accent);
+  text-decoration:none;padding:.2rem .6rem;border-radius:8px;
+  background:rgba(124,110,255,.08);transition:background .12s;
+}
+.ver-link:hover{background:rgba(124,110,255,.16);color:var(--accent)}
+.sin-datos-pill{
+  display:inline-block;padding:.15rem .55rem;border-radius:6px;
+  background:rgba(136,132,168,.12);color:var(--muted);
+  font-size:.68rem;font-weight:600;margin:.1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <!-- Barra de control -->
+  <div class="card fade-up" style="padding:1.1rem 1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <span style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Periodo:</span>
+        {% for opcion in dias_opciones %}
+        <a href="?dias={{ opcion }}" class="periodo-tab {% if dias == opcion %}active{% endif %}">{{ opcion }} días</a>
+        {% endfor %}
+      </div>
+      <div style="display:flex;gap:.6rem">
+        <a href="{% url 'emotions:informe_selector' %}" class="btn btn-ghost btn-sm">
+          <i class="bi bi-arrow-left"></i> Volver
+        </a>
+        <a href="{% url 'emotions:informe_excel' curso.pk %}?dias={{ dias }}" class="btn btn-ghost btn-sm" style="color:#00875a;border-color:rgba(0,184,122,.3)">
+          <i class="bi bi-file-earmark-excel-fill" style="color:#00b87a"></i> Descargar Excel
+        </a>
+        <a href="{% url 'emotions:informe_descargar' curso.pk %}?dias={{ dias }}" class="btn btn-primary btn-sm" id="btnDescargar">
+          <i class="bi bi-file-earmark-pdf-fill"></i> Descargar PDF{% if api_ok %} + IA{% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerta API -->
+  {% if not api_ok %}
+  <div class="api-warn fade-up fade-up-1">
+    <i class="bi bi-exclamation-triangle-fill" style="color:#f5b800;font-size:1.2rem;flex-shrink:0"></i>
+    <div style="font-size:.82rem;color:var(--ink)">
+      <strong>API de IA no configurada</strong> — El PDF se generará sin análisis de inteligencia artificial.
+      Agrega <code style="background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px">ANTHROPIC_API_KEY</code> en <code style="background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px">conectate/settings.py</code>.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem" class="fade-up fade-up-1">
+    <div class="inf-kpi">
+      <div class="inf-kpi-glow" style="background:#7c6eff"></div>
+      <div class="inf-kpi-icon" style="background:rgba(124,110,255,.12)">
+        <i class="bi bi-people-fill" style="color:#7c6eff"></i>
+      </div>
+      <div>
+        <div class="inf-kpi-val">{{ stats_lista|length }}</div>
+        <div class="inf-kpi-lbl">Con datos</div>
+      </div>
+    </div>
+    <div class="inf-kpi">
+      <div class="inf-kpi-glow" style="background:#00d4aa"></div>
+      <div class="inf-kpi-icon" style="background:rgba(0,212,170,.12)"><i class="bi bi-star-fill" style="color:var(--accent3);font-size:1.2rem"></i></div>
+      <div>
+        <div class="inf-kpi-val" style="{% if prom_curso %}{% if prom_curso >= 3.8 %}color:#00b87a{% elif prom_curso >= 3.0 %}color:#f5b800{% else %}color:#e0284f{% endif %}{% endif %}">{{ prom_curso|default:"—" }}</div>
+        <div class="inf-kpi-lbl">Promedio curso</div>
+      </div>
+    </div>
+    <div class="inf-kpi">
+      <div class="inf-kpi-glow" style="background:#ffb340"></div>
+      <div class="inf-kpi-icon" style="background:rgba(255,179,64,.12)">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i>
+      </div>
+      <div>
+        <div class="inf-kpi-val" style="{% if n_alertas > 0 %}color:#e0284f{% endif %}">{{ n_alertas }}</div>
+        <div class="inf-kpi-lbl">Con alertas</div>
+      </div>
+    </div>
+    <div class="inf-kpi">
+      <div class="inf-kpi-glow" style="background:#e0284f"></div>
+      <div class="inf-kpi-icon" style="background:rgba(224,40,79,.1)">
+        <i class="bi bi-graph-down-arrow" style="color:#e0284f"></i>
+      </div>
+      <div>
+        <div class="inf-kpi-val" style="{% if n_baja > 0 %}color:#e0284f{% endif %}">{{ n_baja }}</div>
+        <div class="inf-kpi-lbl">Tendencia baja</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla estudiantes -->
+  <div class="card fade-up fade-up-2" style="overflow:hidden">
+    <div class="card-hd" style="padding:1rem 1.5rem">
+      <span class="card-hd-title">
+        <i class="bi bi-clipboard2-data-fill" style="color:var(--accent)"></i>
+        Datos del periodo &mdash; últimos {{ dias }} días
+      </span>
+      {% if sin_datos %}
+      <div style="margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.3rem">
+        <span style="font-size:.68rem;color:var(--muted);font-weight:600;align-self:center">Sin registros:</span>
+        {% for n in sin_datos %}<span class="sin-datos-pill">{{ n }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div style="overflow-x:auto">
+      <table class="inf-tbl">
+        <thead>
+          <tr>
+            <th style="padding-left:1.5rem">Estudiante</th>
+            <th>Promedio</th>
+            <th>Registros</th>
+            <th>Emoción dominante</th>
+            <th>Tendencia</th>
+            <th>Días bajos</th>
+            <th>Racha</th>
+            <th>Alertas</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in stats_lista %}
+          <tr class="{% if s.promedio <= 2 or s.alertas_activas > 0 %}row-danger{% elif s.promedio >= 4 and s.tendencia > 0 %}row-good{% elif s.dias_bajos > 3 %}row-warn{% endif %}">
+            <td style="padding-left:1.5rem">
+              <div style="display:flex;align-items:center;gap:.65rem">
+                <div class="est-avatar">{{ s.nombre|slice:":1" }}</div>
+                <span style="font-weight:700;font-size:.84rem">{{ s.nombre }}</span>
+              </div>
+            </td>
+            <td>
+              {% if s.promedio >= 4.5 %}<span class="prom-pill prom-excelente">{{ s.promedio }}</span>
+              {% elif s.promedio >= 4 %}<span class="prom-pill prom-bueno">{{ s.promedio }}</span>
+              {% elif s.promedio >= 3 %}<span class="prom-pill prom-regular">{{ s.promedio }}</span>
+              {% elif s.promedio >= 2 %}<span class="prom-pill prom-bajo">{{ s.promedio }}</span>
+              {% else %}<span class="prom-pill prom-critico">{{ s.promedio }}</span>{% endif %}
+            </td>
+            <td style="color:var(--muted);font-weight:600">{{ s.total_registros }}</td>
+            <td>
+              {% if s.emocion_dominante == 'feliz' %}<span style="display:inline-flex;align-items:center;gap:.35rem;color:#00b87a;font-weight:600;font-size:.8rem"><i class="bi bi-emoji-smile-fill"></i> Feliz</span>
+              {% elif s.emocion_dominante == 'tranquilo' %}<span style="display:inline-flex;align-items:center;gap:.35rem;color:#17a2b8;font-weight:600;font-size:.8rem"><i class="bi bi-emoji-neutral-fill"></i> Tranquilo</span>
+              {% elif s.emocion_dominante == 'estresado' %}<span style="display:inline-flex;align-items:center;gap:.35rem;color:#f5b800;font-weight:600;font-size:.8rem"><i class="bi bi-emoji-dizzy-fill"></i> Estresado</span>
+              {% elif s.emocion_dominante == 'triste' %}<span style="display:inline-flex;align-items:center;gap:.35rem;color:#8884a8;font-weight:600;font-size:.8rem"><i class="bi bi-emoji-frown-fill"></i> Triste</span>
+              {% elif s.emocion_dominante == 'enojado' %}<span style="display:inline-flex;align-items:center;gap:.35rem;color:#e0284f;font-weight:600;font-size:.8rem"><i class="bi bi-emoji-angry-fill"></i> Enojado</span>
+              {% else %}<span style="color:var(--muted)">—</span>{% endif %}
+            </td>
+            <td>
+              {% if s.tendencia > 0.3 %}<span class="tend-up"><i class="bi bi-arrow-up-short"></i> Mejorando</span>
+              {% elif s.tendencia < -0.3 %}<span class="tend-down"><i class="bi bi-arrow-down-short"></i> Bajando</span>
+              {% else %}<span class="tend-eq"><i class="bi bi-arrow-right-short"></i> Estable</span>{% endif %}
+            </td>
+            <td>
+              {% if s.dias_bajos > 3 %}<span style="color:#e0284f;font-weight:800;font-size:.85rem">{{ s.dias_bajos }}</span>
+              {% elif s.dias_bajos > 0 %}<span style="color:#f5b800;font-weight:700">{{ s.dias_bajos }}</span>
+              {% else %}<span style="color:var(--muted)">0</span>{% endif %}
+            </td>
+            <td>
+              <span style="display:inline-flex;align-items:center;gap:.25rem;font-weight:700;font-size:.82rem;color:{% if s.racha >= 7 %}#f5b800{% elif s.racha >= 3 %}var(--ink){% else %}var(--muted){% endif %}">
+                <i class="bi bi-fire" style="color:#ff6b35"></i> {{ s.racha }}
+              </span>
+            </td>
+            <td>
+              {% if s.alertas_activas > 0 %}<span class="alerta-chip warn"><i class="bi bi-exclamation-triangle-fill"></i> {{ s.alertas_activas }}</span>
+              {% else %}<span class="alerta-chip ok"><i class="bi bi-check-circle-fill"></i> OK</span>{% endif %}
+            </td>
+            <td><a href="#" class="ver-link">Ver</a></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" style="text-align:center;padding:3.5rem;color:var(--muted)">
+              <div style="font-size:2rem;margin-bottom:.5rem">📭</div>
+              <div style="font-weight:600">Ningún estudiante ha registrado emociones en este periodo.</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Banner descarga -->
+  <div class="dl-banner fade-up fade-up-3">
+    <div style="position:relative;z-index:1">
+      <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:.3rem">
+        Descargar informe completo en PDF
+      </div>
+      <div style="color:rgba(255,255,255,.6);font-size:.82rem">
+        Incluye tablas detalladas{% if api_ok %} + análisis y recomendaciones generadas por IA 🤖{% endif %}
+      </div>
+    </div>
+    <a href="{% url 'emotions:informe_descargar' curso.pk %}?dias={{ dias }}"
+       class="btn" id="btnDescargaGrande"
+       style="background:#fff;color:#7c6eff;font-weight:800;border-radius:50px;position:relative;z-index:1;padding:.65rem 2rem;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25)">
+      <i class="bi bi-file-earmark-pdf-fill" style="margin-right:.4rem"></i>
+      Descargar PDF{% if api_ok %} <span style="background:var(--grd);color:#fff;font-size:.6rem;padding:.12rem .4rem;border-radius:50px;font-weight:800;margin-left:.3rem">+ IA</span>{% endif %}
+    </a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('#btnDescargar, #btnDescargaGrande').forEach(btn => {
+  btn.addEventListener('click', function() {
+    this.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando... (10-20 seg)';
+    this.style.opacity = '.7';
+    this.style.pointerEvents = 'none';
+  });
+});
+</script>
+{% endblock %}

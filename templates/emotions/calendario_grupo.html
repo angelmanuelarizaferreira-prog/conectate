@@ -1,0 +1,375 @@
+{% extends 'base/base.html' %}
+{% block title %}Calendario — Conéctate{% endblock %}
+{% block page_title %}Calendario{% endblock %}
+{% block page_subtitle %}Emociones y citaciones del grupo por mes{% endblock %}
+
+{% block extra_css %}
+<style>
+.cal-layout{display:grid;grid-template-columns:1fr 320px;gap:1.25rem;align-items:start}
+@media(max-width:860px){.cal-layout{grid-template-columns:1fr}}
+.mes-nav{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:.85rem 1.25rem;margin-bottom:1rem}
+.mes-nav-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:none;cursor:pointer;color:var(--ink);font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;text-decoration:none}
+.mes-nav-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.mes-title{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:var(--ink);text-align:center}
+.mes-year{font-size:.72rem;color:var(--muted);font-weight:500;display:block}
+.cal-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.cal-hdr-row{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface);border-bottom:1px solid var(--border)}
+.cal-hdr-cell{text-align:center;padding:.55rem .25rem;font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.cal-body{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--border)}
+.cal-cell{min-height:88px;padding:.4rem .45rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;position:relative;display:flex;flex-direction:column;gap:3px}
+.cal-cell:hover{background:rgba(124,110,255,.05)}
+.cal-cell.empty{background:var(--surface);cursor:default;opacity:.4;pointer-events:none}
+.cal-cell.today{background:rgba(124,110,255,.07)}
+.cal-cell.selected{background:rgba(124,110,255,.12);outline:2px solid var(--accent);outline-offset:-1px}
+.day-num{font-size:.78rem;font-weight:700;color:var(--ink);width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.cal-cell.today .day-num{background:var(--accent);color:#fff;font-weight:800}
+.emo-bar{height:5px;border-radius:3px;width:100%;margin-top:2px}
+.cita-chip{font-size:.58rem;font-weight:700;padding:.12rem .38rem;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;line-height:1.4}
+.cita-chip.urgente{background:#ffe0e6;color:#c0002a}
+.cita-chip.normal{background:rgba(124,110,255,.13);color:var(--accent)}
+.cita-chip.confirmada{background:rgba(0,184,122,.12);color:#00875a}
+.cita-chip.completada{background:rgba(100,100,120,.1);color:var(--muted)}
+.more-citas{font-size:.58rem;color:var(--muted);font-weight:600}
+.side-panel{display:flex;flex-direction:column;gap:.85rem}
+.panel-day{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel-day-hdr{padding:1rem 1.2rem;background:var(--grd);color:#fff}
+.panel-day-fecha{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800}
+.panel-day-sub{font-size:.72rem;opacity:.75;margin-top:.15rem}
+.panel-day-body{padding:.85rem 1.1rem;display:flex;flex-direction:column;gap:.65rem}
+.emo-panel-row{display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;border-radius:10px;background:rgba(124,110,255,.06);border:1px solid rgba(124,110,255,.12)}
+.emo-puntaje{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;line-height:1}
+.cita-panel-item{border-radius:10px;overflow:hidden;border:1.5px solid var(--border);transition:border-color .15s;margin-bottom:.5rem}
+.cita-panel-item:hover{border-color:var(--accent)}
+.cita-panel-hdr{padding:.55rem .8rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.cita-panel-hdr.urgente-bg{background:linear-gradient(135deg,#ffe0e6,#fff0f3)}
+.cita-panel-hdr.normal-bg{background:rgba(124,110,255,.07)}
+.cita-panel-hdr.confirmada-bg{background:rgba(0,184,122,.07)}
+.cita-panel-hdr.completada-bg{background:var(--surface)}
+.cita-hora{font-size:.78rem;font-weight:800;color:var(--ink)}
+.cita-estado-badge{font-size:.6rem;font-weight:800;padding:.18rem .5rem;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+.cita-panel-body{padding:.6rem .8rem}
+.cita-panel-est{font-size:.83rem;font-weight:700;color:var(--ink)}
+.cita-panel-motivo{font-size:.75rem;color:var(--muted);margin-top:.2rem;line-height:1.45}
+.cita-panel-prof{font-size:.68rem;color:var(--muted);margin-top:.3rem}
+.urg-badge{display:inline-flex;align-items:center;gap:.25rem;font-size:.58rem;font-weight:900;letter-spacing:.5px;background:#e0284f;color:#fff;padding:.1rem .45rem;border-radius:4px;text-transform:uppercase}
+.leyenda{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}
+.ley-sq{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.ley-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+@media(max-width:580px){.cal-stats{grid-template-columns:repeat(2,1fr)}}
+.cal-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.85rem;text-align:center}
+.cal-stat-val{font-family:'Syne',sans-serif;font-size:1.5rem;color:var(--ink);line-height:1}
+.cal-stat-lbl{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:.2rem}
+.curso-bar{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:.85rem 1.25rem;display:flex;align-items:center;gap:.85rem;flex-wrap:wrap}
+.cal-empty{text-align:center;padding:3rem 1.5rem;color:var(--muted)}
+.cal-empty-ico{font-size:3.5rem;opacity:.2;margin-bottom:.75rem}
+body.dark .cal-cell:hover{background:rgba(157,143,255,.07)}
+body.dark .cal-cell.today{background:rgba(157,143,255,.1)}
+body.dark .cita-panel-hdr.urgente-bg{background:rgba(224,40,79,.15)}
+body.dark .emo-panel-row{background:rgba(157,143,255,.08);border-color:rgba(157,143,255,.15)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1rem">
+
+  <div class="curso-bar fade-up">
+    <span style="font-weight:700;font-size:.85rem;color:var(--ink)">
+      <i class="bi bi-mortarboard-fill" style="color:var(--accent)"></i> Curso:
+    </span>
+    <form method="get" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <input type="hidden" name="mes" value="{{ mes_actual }}">
+      <select name="curso" class="field-input field-select" style="width:auto;min-width:180px" onchange="this.form.submit()">
+        <option value="">— Todos los cursos —</option>
+        {% for c in cursos %}
+        <option value="{{ c.pk }}" {% if curso_sel and curso_sel.pk == c.pk %}selected{% endif %}>{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+      {% if curso_sel %}
+      <a href="{% url 'emotions:semaforo' %}?curso={{ curso_sel.pk }}" class="btn btn-ghost btn-sm"><i class="bi bi-traffic-light"></i> Semáforo</a>
+      <a href="{% url 'emotions:resumen_grupo' %}?curso={{ curso_sel.pk }}" class="btn btn-ghost btn-sm"><i class="bi bi-people-fill"></i> Resumen</a>
+      {% endif %}
+      <a href="{% url 'emotions:citaciones_lista' %}" class="btn btn-ghost btn-sm"><i class="bi bi-send-fill"></i> Citaciones</a>
+    </form>
+  </div>
+
+  {% if curso_sel or not curso_sel %}
+  <div class="cal-stats fade-up fade-up-1">
+    <div class="cal-stat"><div class="cal-stat-val" id="sDias">—</div><div class="cal-stat-lbl">Días con datos</div></div>
+    <div class="cal-stat"><div class="cal-stat-val" id="sProm">—</div><div class="cal-stat-lbl">Promedio general</div></div>
+    <div class="cal-stat"><div class="cal-stat-val" id="sMejor" style="color:#00b87a">—</div><div class="cal-stat-lbl">Mejor día</div></div>
+    <div class="cal-stat"><div class="cal-stat-val" id="sPeor" style="color:#e0284f">—</div><div class="cal-stat-lbl">Día difícil</div></div>
+  </div>
+  {% endif %}
+
+  <div class="cal-layout fade-up fade-up-2">
+    <div>
+      <div class="mes-nav">
+        <a href="?mes={{ mes_prev }}{% if curso_sel %}&curso={{ curso_sel.pk }}{% endif %}" class="mes-nav-btn"><i class="bi bi-chevron-left"></i></a>
+        <div style="text-align:center">
+          <div class="mes-title">{{ mes_nombre }}</div>
+          <span class="mes-year">{{ mes_year }}</span>
+        </div>
+        <a href="?mes={{ mes_next }}{% if curso_sel %}&curso={{ curso_sel.pk }}{% endif %}" class="mes-nav-btn"><i class="bi bi-chevron-right"></i></a>
+      </div>
+
+      <div class="cal-card">
+        <div class="cal-hdr-row">
+          <div class="cal-hdr-cell">Lun</div>
+          <div class="cal-hdr-cell">Mar</div>
+          <div class="cal-hdr-cell">Mié</div>
+          <div class="cal-hdr-cell">Jue</div>
+          <div class="cal-hdr-cell">Vie</div>
+          <div class="cal-hdr-cell" style="color:#ff6b9d">Sáb</div>
+          <div class="cal-hdr-cell" style="color:#ff6b9d">Dom</div>
+        </div>
+        <div class="cal-body" id="calBody"></div>
+      </div>
+
+      <div style="margin-top:.75rem;display:flex;gap:1.25rem;flex-wrap:wrap">
+        <div class="leyenda">
+          <div class="ley-sq" style="background:rgba(124,110,255,.1);border:1px solid var(--border)"></div> Sin datos
+          <div class="ley-sq" style="background:#e0284f"></div> Difícil
+          <div class="ley-sq" style="background:#fd7e14"></div> Regular
+          <div class="ley-sq" style="background:#f5b800"></div> Bien
+          <div class="ley-sq" style="background:#00b87a"></div> Excelente
+          &nbsp;
+          <div class="ley-dot" style="background:#e0284f;display:inline-block"></div> Cita urgente
+          <div class="ley-dot" style="background:var(--accent);display:inline-block"></div> Cita normal
+        </div>
+      </div>
+    </div>
+
+    <div class="side-panel" id="sidePanel">
+      <div class="cal-empty" id="sideEmpty">
+        <div class="cal-empty-ico"><i class="bi bi-calendar3-event"></i></div>
+        <div style="font-weight:700;margin-bottom:.35rem">Selecciona un día</div>
+        <div style="font-size:.83rem">Haz clic en cualquier día para ver emociones y citaciones</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CAL_DATA   = {{ cal_data_json|safe }};
+const CITAS_DATA = {{ citaciones_json|safe }};
+const CURSOS_INFO = {{ cursos_info_json|safe }};
+const HOY_STR    = '{{ hoy }}';
+const MES_ACTUAL = '{{ mes_actual }}';
+const MES_NOMBRE = '{{ mes_nombre }}';
+const MES_YEAR   = {{ mes_year }};
+const ES_TODOS   = {{ curso_sel|yesno:'false,true' }};
+
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_LONG = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+const [mesY, mesM] = MES_ACTUAL.split('-').map(Number);
+
+function dayColor(p){ return p>=3.8?'#00b87a':p>=3.0?'#f5b800':p>=2.0?'#fd7e14':'#e0284f'; }
+function toISO(d){ return d.toISOString().slice(0,10); }
+
+// Stats
+if(document.getElementById('sDias')){
+  const proms = Object.values(CAL_DATA).map(d=>d.prom);
+  const n = proms.length;
+  document.getElementById('sDias').textContent = n || '0';
+  if(n){
+    document.getElementById('sProm').textContent = (proms.reduce((a,b)=>a+b,0)/n).toFixed(1);
+    document.getElementById('sMejor').textContent = Math.max(...proms).toFixed(1)+'/5';
+    document.getElementById('sPeor').textContent  = Math.min(...proms).toFixed(1)+'/5';
+  }
+}
+
+// Leyenda de cursos cuando es "todos"
+if(ES_TODOS && CURSOS_INFO.length){
+  const leyContainer = document.querySelector('.leyenda');
+  if(leyContainer){
+    const sep = document.createElement('span');
+    sep.style.cssText = 'color:var(--muted);font-weight:800;margin:0 .25rem';
+    sep.textContent = '|';
+    leyContainer.appendChild(sep);
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-weight:700;color:var(--ink)';
+    lbl.textContent = 'Cursos:';
+    leyContainer.appendChild(lbl);
+    CURSOS_INFO.forEach(c => {
+      const dot = document.createElement('div');
+      dot.className = 'ley-dot';
+      dot.style.cssText = `background:${c.color};display:inline-block`;
+      leyContainer.appendChild(dot);
+      const name = document.createElement('span');
+      name.textContent = c.nombre;
+      leyContainer.appendChild(name);
+    });
+  }
+}
+
+// Build calendar
+const body = document.getElementById('calBody');
+let selectedCell = null;
+
+const primerDia = new Date(mesY, mesM-1, 1);
+const dow = primerDia.getDay();
+const pad = dow === 0 ? 6 : dow - 1;
+const ultimoDia = new Date(mesY, mesM, 0).getDate();
+
+for(let i=0;i<pad;i++){
+  const el = document.createElement('div');
+  el.className = 'cal-cell empty';
+  body.appendChild(el);
+}
+
+for(let d=1;d<=ultimoDia;d++){
+  const fecha = new Date(mesY, mesM-1, d);
+  const iso = toISO(fecha);
+  const emoInfo = CAL_DATA[iso];
+  const citasHoy = CITAS_DATA[iso] || [];
+
+  const cell = document.createElement('div');
+  cell.className = 'cal-cell';
+  cell.dataset.iso = iso;
+
+  if(iso === HOY_STR) cell.classList.add('today');
+
+  const numEl = document.createElement('div');
+  numEl.className = 'day-num';
+  numEl.textContent = d;
+  cell.appendChild(numEl);
+
+  if(emoInfo){
+    if(ES_TODOS && emoInfo.multi && emoInfo.multi.length > 1){
+      // Multi-course: show colored segments
+      const barWrap = document.createElement('div');
+      barWrap.style.cssText = 'display:flex;gap:2px;width:100%;margin-top:2px';
+      emoInfo.multi.forEach(m => {
+        const seg = document.createElement('div');
+        seg.style.cssText = `height:5px;border-radius:3px;flex:1;background:${m.color}`;
+        barWrap.appendChild(seg);
+      });
+      cell.appendChild(barWrap);
+    } else {
+      const bar = document.createElement('div');
+      bar.className = 'emo-bar';
+      bar.style.background = emoInfo.color || dayColor(emoInfo.prom);
+      cell.appendChild(bar);
+    }
+  }
+
+  citasHoy.slice(0,2).forEach(c => {
+    const chip = document.createElement('span');
+    const cls = c.urgente ? 'urgente' : (c.estado==='confirmada'?'confirmada':(c.estado==='completada'?'completada':'normal'));
+    chip.className = 'cita-chip ' + cls;
+    chip.textContent = (c.urgente?'⚠ ':'') + c.estudiante.split(' ')[0] + ' ' + c.hora;
+    cell.appendChild(chip);
+  });
+  if(citasHoy.length > 2){
+    const more = document.createElement('span');
+    more.className = 'more-citas';
+    more.textContent = '+' + (citasHoy.length-2) + ' más';
+    cell.appendChild(more);
+  }
+
+  cell.addEventListener('click', () => selectDay(iso, fecha, emoInfo, citasHoy, cell));
+  body.appendChild(cell);
+}
+
+function selectDay(iso, fecha, emoInfo, citas, cell){
+  if(selectedCell) selectedCell.classList.remove('selected');
+  cell.classList.add('selected');
+  selectedCell = cell;
+
+  const panel = document.getElementById('sidePanel');
+  const dayName = DIAS_LONG[fecha.getDay()];
+  const mesNom  = MESES[fecha.getMonth()];
+
+  let html = `<div class="panel-day">
+    <div class="panel-day-hdr">
+      <div class="panel-day-fecha">${dayName} ${fecha.getDate()}</div>
+      <div class="panel-day-sub">${mesNom} de ${fecha.getFullYear()}</div>
+    </div>
+    <div class="panel-day-body">`;
+
+  html += `<div style="font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px"><i class="bi bi-heart-pulse-fill" style="color:var(--accent)"></i> Emociones del grupo</div>`;
+
+  if(emoInfo){
+    const col = emoInfo.color || dayColor(emoInfo.prom);
+    const labels = {5:'Excelente',4:'Bien',3:'Regular',2:'Difícil',1:'Muy difícil'};
+    html += `<div class="emo-panel-row">
+      <div class="emo-puntaje" style="color:${col}">${emoInfo.prom}</div>
+      <div>
+        <div style="font-weight:700;font-size:.85rem;color:var(--ink)">${labels[Math.round(emoInfo.prom)]||'Regular'} <span style="font-size:.7rem;color:var(--muted)">/ 5</span></div>
+        <div style="font-size:.72rem;color:var(--muted)">${emoInfo.n} estudiante${emoInfo.n!==1?'s':''} registraron</div>
+      </div>
+    </div>`;
+
+    // Si es "todos los cursos", mostrar desglose por curso
+    if(ES_TODOS && emoInfo.multi && emoInfo.multi.length > 0){
+      html += `<div style="display:flex;flex-direction:column;gap:.3rem;margin-top:.15rem">`;
+      // Buscar nombre del curso
+      const cursoMap = {};
+      CURSOS_INFO.forEach(c => { /* We pass id in multi */ });
+      emoInfo.multi.forEach(m => {
+        const cursoInfo = CURSOS_INFO.find(c => c.color === m.color) || {};
+        html += `<div style="display:flex;align-items:center;gap:.5rem;font-size:.75rem;padding:.3rem .6rem;border-radius:7px;background:rgba(0,0,0,.03)">
+          <div style="width:10px;height:10px;border-radius:3px;background:${m.color};flex-shrink:0"></div>
+          <span style="font-weight:600;color:var(--ink);flex:1">${cursoInfo.nombre||'Curso'}</span>
+          <span style="font-weight:800;color:${m.color}">${m.prom}/5</span>
+          <span style="color:var(--muted)">(${m.n})</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  } else {
+    html += `<div style="font-size:.82rem;color:var(--muted);padding:.5rem .75rem;background:var(--surface);border-radius:8px;text-align:center">Sin registros emocionales</div>`;
+  }
+
+  html += `<div style="margin-top:.35rem;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px"><i class="bi bi-calendar-event-fill" style="color:#ff6b9d"></i> Citaciones (${citas.length})</div>`;
+
+  if(citas.length){
+    citas.forEach(c => {
+      const bg = c.urgente ? 'urgente-bg' : (c.estado==='confirmada'?'confirmada-bg':(c.estado==='completada'?'completada-bg':'normal-bg'));
+      const eBadgeColor = c.estado==='confirmada'?'background:rgba(0,184,122,.15);color:#00875a':
+                          c.estado==='completada'?'background:rgba(100,100,120,.1);color:var(--muted)':
+                          c.estado==='cancelada'?'background:rgba(224,40,79,.1);color:#c0002a':
+                          'background:rgba(124,110,255,.12);color:var(--accent)';
+      const eLabel = {pendiente:'Pendiente',confirmada:'Confirmada',completada:'Completada',cancelada:'Cancelada'}[c.estado]||c.estado;
+      html += `<div class="cita-panel-item">
+        <div class="cita-panel-hdr ${bg}">
+          <span class="cita-hora"><i class="bi bi-clock-fill"></i> ${c.hora}</span>
+          <div style="display:flex;align-items:center;gap:.3rem">
+            ${c.urgente?'<span class="urg-badge">⚠ Urgente</span>':''}
+            <span class="cita-estado-badge" style="${eBadgeColor}">${eLabel}</span>
+          </div>
+        </div>
+        <div class="cita-panel-body">
+          <div class="cita-panel-est"><i class="bi bi-person-fill"></i> ${c.estudiante}</div>
+          <div class="cita-panel-motivo">${c.motivo}</div>
+          <div class="cita-panel-prof">Por: ${c.profesor}</div>
+        </div>
+      </div>`;
+    });
+  } else {
+    html += `<div style="font-size:.82rem;color:var(--muted);padding:.5rem .75rem;background:var(--surface);border-radius:8px;text-align:center">Sin citaciones este día</div>`;
+  }
+
+  html += `<a href="/emotions/citaciones/" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:.15rem"><i class="bi bi-plus-circle-fill"></i> Nueva citación</a>`;
+  html += `</div></div>`;
+  panel.innerHTML = html;
+}
+
+// Mostrar stats también en modo "todos"
+if(ES_TODOS && document.getElementById('sDias')){
+  // ya calculado arriba
+}
+
+// Auto-seleccionar hoy
+const hoyCell = document.querySelector('.cal-cell[data-iso="' + HOY_STR + '"]');
+if(hoyCell){
+  const fechaHoy = new Date(HOY_STR + 'T12:00:00');
+  selectDay(HOY_STR, fechaHoy, CAL_DATA[HOY_STR], CITAS_DATA[HOY_STR]||[], hoyCell);
+}
+</script>
+{% endblock %}

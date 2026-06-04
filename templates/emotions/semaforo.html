@@ -1,0 +1,169 @@
+{% extends 'base/base.html' %}
+{% block title %}Semaforo del Grupo{% endblock %}
+{% block page_title %}Semaforo Emocional{% endblock %}
+{% block page_subtitle %}Estado de bienestar automatico por estudiante (7 dias){% endblock %}
+{% block extra_css %}
+<style>
+.sem-verde  { border-left: 4px solid #00b87a; background: rgba(0,184,122,.04); }
+.sem-amarillo{ border-left: 4px solid #f5b800; background: rgba(245,184,0,.04); }
+.sem-rojo   { border-left: 4px solid #e0284f; background: rgba(224,40,79,.05); }
+.sem-gris   { border-left: 4px solid #6b6890; background: rgba(107,104,144,.04); }
+.sem-dot{ width:14px;height:14px;border-radius:50%;flex-shrink:0;display:inline-block }
+.sem-dot.verde  { background:#00b87a;box-shadow:0 0 8px rgba(0,184,122,.5) }
+.sem-dot.amarillo{ background:#f5b800;box-shadow:0 0 8px rgba(245,184,0,.5) }
+.sem-dot.rojo   { background:#e0284f;box-shadow:0 0 8px rgba(224,40,79,.5) }
+.sem-dot.gris   { background:#6b6890 }
+.kpi-sem{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem;text-align:center;
+}
+.kpi-sem-val{font-family:'Syne',sans-serif;font-size:2rem;line-height:1;margin:.25rem 0}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Selector -->
+  <div class="card fade-up" style="padding:.85rem 1.25rem">
+    <form method="get" style="display:flex;align-items:center;gap:.85rem;flex-wrap:wrap">
+      <span style="font-weight:700;font-size:.85rem">Selecciona un curso:</span>
+      <select name="curso" class="field-input field-select" style="width:auto" onchange="this.form.submit()">
+        <option value="">— Seleccionar —</option>
+        {% for c in cursos %}<option value="{{ c.pk }}" {% if curso_sel and curso_sel.pk == c.pk %}selected{% endif %}>{{ c.nombre }} &mdash; {{ c.grado }}</option>{% endfor %}
+      </select>
+      {% if curso_sel %}<a href="{% url 'emotions:calendario_grupo' %}?curso={{ curso_sel.pk }}" class="btn btn-ghost btn-sm"><i class="bi bi-calendar-month"></i> Ver calendario</a>{% endif %}
+    </form>
+  </div>
+
+  {% if curso_sel %}
+  <!-- KPIs semaforo -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem" class="fade-up fade-up-1">
+    <div class="kpi-sem">
+      <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:.25rem">
+        <div class="sem-dot verde"></div>
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Verde</span>
+      </div>
+      <div class="kpi-sem-val" style="color:#00b87a">{{ resumen.verde }}</div>
+      <div style="font-size:.73rem;color:var(--muted)">Bienestar bueno</div>
+    </div>
+    <div class="kpi-sem">
+      <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:.25rem">
+        <div class="sem-dot amarillo"></div>
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Amarillo</span>
+      </div>
+      <div class="kpi-sem-val" style="color:#f5b800">{{ resumen.amarillo }}</div>
+      <div style="font-size:.73rem;color:var(--muted)">Requiere atencion</div>
+    </div>
+    <div class="kpi-sem">
+      <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:.25rem">
+        <div class="sem-dot rojo"></div>
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Rojo</span>
+      </div>
+      <div class="kpi-sem-val" style="color:#e0284f">{{ resumen.rojo }}</div>
+      <div style="font-size:.73rem;color:var(--muted)">Prioridad alta</div>
+    </div>
+    <div class="kpi-sem">
+      <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:.25rem">
+        <div class="sem-dot gris"></div>
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Gris</span>
+      </div>
+      <div class="kpi-sem-val" style="color:var(--muted)">{{ resumen.gris }}</div>
+      <div style="font-size:.73rem;color:var(--muted)">Sin datos</div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card fade-up fade-up-2">
+    <div class="card-hd">
+      <span class="card-hd-title"><i class="bi bi-people-fill"></i> {{ datos|length }} estudiantes &mdash; Ultimos 7 dias</span>
+      <span style="font-size:.75rem;color:var(--muted)">Hoy: {{ hoy|date:"d/m/Y" }}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0">
+      {% for d in datos %}
+      <div class="sem-{{ d.semaforo }}" style="display:flex;align-items:center;gap:1rem;padding:.9rem 1.25rem;border-bottom:1px solid var(--border);transition:background .12s">
+        <div class="sem-dot {{ d.semaforo }}" style="flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:.88rem">{{ d.estudiante.get_full_name }}</div>
+          <div style="font-size:.73rem;color:var(--muted)">@{{ d.estudiante.username }}</div>
+        </div>
+        <div style="text-align:center;min-width:60px">
+          <div style="font-family:'Syne',sans-serif;font-size:1.2rem;color:{% if d.semaforo == 'verde' %}#00b87a{% elif d.semaforo == 'amarillo' %}#f5b800{% elif d.semaforo == 'rojo' %}#e0284f{% else %}var(--muted){% endif %}">
+            {{ d.prom_7d|default:"—" }}
+          </div>
+          <div style="font-size:.65rem;color:var(--muted);font-weight:600">PROM 7D</div>
+        </div>
+        <div style="text-align:center;min-width:80px">
+          {% if d.tendencia == 'mejorando' %}<span style="color:#00b87a;font-weight:700;font-size:.8rem">&#8593; Mejorando</span>
+          {% elif d.tendencia == 'bajando' %}<span style="color:#e0284f;font-weight:700;font-size:.8rem">&#8595; Bajando</span>
+          {% elif d.tendencia == 'estable' %}<span style="color:var(--muted);font-weight:700;font-size:.8rem">&#8594; Estable</span>
+          {% else %}<span style="color:var(--muted);font-size:.8rem">Sin datos</span>{% endif %}
+        </div>
+        <div style="text-align:center;min-width:70px">
+          {% if d.reg_hoy %}
+          <span style="font-size:1.3rem"><i class="bi {{ d.reg_hoy.get_emoji }}"></i></span>
+          {% else %}
+          <span style="font-size:.75rem;color:var(--muted);font-style:italic">Sin registrar</span>
+          {% endif %}
+        </div>
+        <div style="min-width:55px;text-align:center">
+          <span style="font-size:.73rem;color:var(--muted)">{{ d.registros_semana }}/7 dias</span>
+        </div>
+        <div style="display:flex;gap:.35rem">
+          <a href="{% url 'accounts:perfil_estudiante' d.estudiante.pk %}" class="btn btn-ghost btn-xs">Ver</a>
+          <button class="btn btn-primary btn-xs" onclick="openMsg({{ d.estudiante.pk }}, '{{ d.estudiante.get_full_name }}')">
+            <i class="bi bi-chat-dots"></i>
+          </button>
+        </div>
+      </div>
+      {% empty %}
+      <div style="padding:3rem;text-align:center;color:var(--muted)">Sin estudiantes inscritos</div>
+      {% endfor %}
+    </div>
+    <div style="padding:.75rem 1.25rem;background:rgba(124,110,255,.03);border-top:1px solid var(--border);font-size:.75rem;color:var(--muted)">
+      <i class="bi bi-circle-fill" style="color:#00b87a"></i> Verde = promedio &ge; 3.5 &nbsp; <i class="bi bi-circle-fill" style="color:#f5b800"></i> Amarillo = 2.5&ndash;3.4 &nbsp; <i class="bi bi-circle-fill" style="color:#e0284f"></i> Rojo = &lt; 2.5 &nbsp; <i class="bi bi-circle" style="color:#aaa"></i> Gris = sin registros
+    </div>
+  </div>
+  {% else %}
+  <div class="empty"><span class="empty-ico"><i class="bi bi-dash-circle-fill" style="color:#aaa"></i></span><div class="empty-title">Selecciona un curso</div><div class="empty-sub">Elige un curso para ver el semaforo emocional</div></div>
+  {% endif %}
+
+</div>
+
+<!-- Modal enviar mensaje -->
+<div id="msgModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(13,13,20,.8);backdrop-filter:blur(6px);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:var(--r);padding:2rem;max-width:440px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+    <div style="font-family:'Syne',sans-serif;font-size:1.1rem;margin-bottom:.35rem">Enviar mensaje de apoyo</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem" id="msgDestinatario"></div>
+    <form id="msgForm" method="post" action="">
+      {% csrf_token %}
+      <textarea name="contenido" class="field-input" style="resize:vertical;min-height:110px;border-radius:var(--r2);width:100%;margin-bottom:.85rem" rows="4"
+        placeholder="Escribe un mensaje de apoyo para este estudiante..."></textarea>
+      <div style="display:flex;gap:.65rem">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center">
+          <i class="bi bi-send-fill"></i> Enviar
+        </button>
+        <button type="button" onclick="closeMsg()" class="btn btn-ghost">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openMsg(pk, nombre){
+  document.getElementById('msgDestinatario').textContent = 'Para: ' + nombre;
+  document.getElementById('msgForm').action = '/emotions/mensajes/enviar/' + pk + '/';
+  const m = document.getElementById('msgModal');
+  m.style.display = 'flex';
+}
+function closeMsg(){
+  document.getElementById('msgModal').style.display = 'none';
+  document.getElementById('msgForm').reset();
+}
+document.getElementById('msgModal').addEventListener('click', function(e){
+  if(e.target === this) closeMsg();
+});
+</script>
+{% endblock %}

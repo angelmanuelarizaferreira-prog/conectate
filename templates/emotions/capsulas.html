@@ -1,0 +1,295 @@
+{% extends 'base/base.html' %}
+{% block title %}C&aacute;psulas de Bienestar{% endblock %}
+{% block page_title %}C&aacute;psulas de Bienestar{% endblock %}
+{% block page_subtitle %}T&eacute;cnicas interactivas para tu salud emocional{% endblock %}
+{% block extra_css %}
+<style>
+.cap-card{
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);
+  padding:1.5rem;cursor:pointer;transition:all .2s;
+}
+.cap-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.1)}
+.cap-ico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin-bottom:1rem}
+
+/* Modal de capsulas */
+.cap-modal{
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(13,13,20,.85);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.cap-modal.open{opacity:1;pointer-events:all}
+.cap-box{
+  background:var(--card);border-radius:24px;padding:2.5rem;
+  max-width:480px;width:90%;text-align:center;
+  transform:translateY(20px);transition:transform .3s;
+  box-shadow:0 24px 80px rgba(0,0,0,.3);
+}
+.cap-modal.open .cap-box{transform:translateY(0)}
+
+/* Animaciones de respiracion */
+.breath-circle{
+  width:160px;height:160px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:1.5rem auto;font-size:.9rem;font-weight:700;
+  color:#fff;position:relative;
+}
+.breath-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:3px solid currentColor;opacity:.3;
+  animation:none;
+}
+@keyframes expandRing{0%{transform:scale(1);opacity:.3}50%{transform:scale(1.3);opacity:.6}100%{transform:scale(1);opacity:.3}}
+.breath-phase{font-size:.8rem;font-weight:600;margin-top:.5rem;color:var(--muted)}
+.breath-counter{font-family:'Syne',sans-serif;font-size:2.5rem;color:var(--ink)}
+
+/* Grounding */
+.grounding-item{
+  background:var(--surface);border-radius:var(--r2);padding:1rem;
+  margin-bottom:.6rem;font-size:.88rem;border-left:3px solid var(--accent);
+  text-align:left;line-height:1.5;
+}
+
+/* Progreso capsulas */
+.cap-progress{
+  height:6px;border-radius:3px;background:var(--border);
+  margin:1rem 0;overflow:hidden;
+}
+.cap-progress-fill{
+  height:100%;border-radius:3px;
+  transition:width .5s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <div class="card fade-up" style="background:var(--grd2);border:none;padding:1.75rem;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:#00d4aa;filter:blur(80px);opacity:.2"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;gap:1.25rem">
+      <div style="font-size:2.5rem"><i class="bi bi-person-arms-up"></i></div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.3rem;color:#fff;letter-spacing:-.3px;margin-bottom:.3rem">C&aacute;psulas de Bienestar</div>
+        <div style="font-size:.85rem;color:rgba(255,255,255,.55);max-width:500px">T&eacute;cnicas cientificamente validadas para manejar el estres, la ansiedad y las emociones dif&iacute;ciles. Cada c&aacute;psula dura menos de 5 minutos.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem" class="fade-up fade-up-1">
+    {% for cap in capsulas %}
+    <div class="cap-card" onclick="abrirCapsula('{{ cap.id }}')">
+      <div class="cap-ico" style="background:{{ cap.color }}20;color:{{ cap.color }}"><i class="bi {{ cap.emoji }}" style="font-size:1.5rem"></i></div>
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:.35rem">{{ cap.nombre }}</div>
+      <div style="font-size:.8rem;color:var(--muted);line-height:1.55;margin-bottom:.85rem">{{ cap.desc }}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="chip chip-dark"><i class="bi bi-clock"></i> {{ cap.duracion }}</span>
+        <span style="font-size:.8rem;color:var(--accent);font-weight:600">Iniciar →</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- Modal interactivo -->
+<div class="cap-modal" id="capModal">
+  <div class="cap-box">
+    <div id="capContent"></div>
+    <button onclick="cerrarCapsula()" class="btn btn-ghost" style="margin-top:1.25rem;width:100%;justify-content:center">
+      <i class="bi bi-x-circle"></i> Cerrar
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let timer = null;
+
+function abrirCapsula(id){
+  document.getElementById('capModal').classList.add('open');
+  const el = document.getElementById('capContent');
+
+  if(id === 'respiracion_478'){
+    el.innerHTML = respiracion478();
+    iniciar478();
+  } else if(id === 'caja_respiracion'){
+    el.innerHTML = respiracionCaja();
+    iniciarCaja();
+  } else if(id === 'grounding_54321'){
+    el.innerHTML = grounding();
+  } else if(id === 'escaneo_corporal'){
+    el.innerHTML = escaneo();
+  } else if(id === 'gratitud_3'){
+    el.innerHTML = gratitud();
+  } else if(id === 'visualizacion'){
+    el.innerHTML = visualizacion();
+  }
+}
+
+function cerrarCapsula(){
+  document.getElementById('capModal').classList.remove('open');
+  if(timer){ clearInterval(timer); timer = null; }
+}
+
+// ── 4-7-8 ────────────────────────────────────────────────────────────────────
+function respiracion478(){
+  return `
+    <div style="font-size:1.3rem;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:.25rem">Respiraci&oacute;n 4-7-8</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.5rem">Inhala 4s &bull; Retiene 7s &bull; Exhala 8s</div>
+    <div class="breath-circle" id="bc" style="background:linear-gradient(135deg,#7c6eff,#ff6b9d)">
+      <div class="breath-ring" id="br"></div>
+      <div>
+        <div class="breath-counter" id="bCount">4</div>
+        <div class="breath-phase" id="bPhase" style="color:rgba(255,255,255,.8)">Inhala</div>
+      </div>
+    </div>
+    <div class="cap-progress"><div class="cap-progress-fill" id="bProg" style="background:linear-gradient(90deg,#7c6eff,#ff6b9d);width:0%"></div></div>
+    <div style="font-size:.8rem;color:var(--muted)">Ciclo <span id="bCycle">1</span> de 4</div>`;
+}
+function iniciar478(){
+  const seq = [{fase:'Inhala',dur:4,color:'#7c6eff'},{fase:'Retiene',dur:7,color:'#ffb340'},{fase:'Exhala',dur:8,color:'#00d4aa'}];
+  let si=0,t=seq[0].dur,ciclo=1;
+  const total=4;
+  function tick(){
+    const s=seq[si];
+    document.getElementById('bCount').textContent=t;
+    document.getElementById('bPhase').textContent=s.fase;
+    document.getElementById('bc').style.background=`linear-gradient(135deg,${s.color},${s.color}aa)`;
+    const pct=((si===0?(s.dur-t)/s.dur:si===1?(s.dur-t)/s.dur:(s.dur-t)/s.dur))*100;
+    document.getElementById('bProg').style.width=pct+'%';
+    if(t<=0){
+      si=(si+1)%3;
+      if(si===0){ciclo++;if(ciclo>total){cerrarCapsula();return;}}
+      document.getElementById('bCycle').textContent=ciclo;
+      t=seq[si].dur;
+    } else { t--; }
+  }
+  tick(); timer=setInterval(tick,1000);
+}
+
+// ── Caja ─────────────────────────────────────────────────────────────────────
+function respiracionCaja(){
+  return `
+    <div style="font-size:1.3rem;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:.25rem">Respiraci&oacute;n de Caja</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">4s en cada fase — igual que una caja</div>
+    <div style="width:160px;height:160px;margin:1rem auto;position:relative">
+      <svg viewBox="0 0 160 160" width="160" height="160">
+        <rect x="20" y="20" width="120" height="120" rx="12" fill="none" stroke="rgba(124,110,255,.2)" stroke-width="2"/>
+        <rect id="cajaProg" x="20" y="20" width="120" height="120" rx="12" fill="none" stroke="#7c6eff" stroke-width="4"
+          stroke-dasharray="480" stroke-dashoffset="480" stroke-linecap="round"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div class="breath-counter" id="cajaCount">4</div>
+        <div style="font-size:.8rem;font-weight:600;color:var(--muted)" id="cajaPhase">Inhala</div>
+      </div>
+    </div>
+    <div style="font-size:.8rem;color:var(--muted)">Ciclo <span id="cajaCiclo">1</span> de 4</div>`;
+}
+function iniciarCaja(){
+  const fases=['Inhala','Retiene','Exhala','Retiene'];
+  let fi=0,t=4,ciclo=1;
+  function tick(){
+    document.getElementById('cajaCount').textContent=t;
+    document.getElementById('cajaPhase').textContent=fases[fi];
+    const pct=((fi*4+(4-t))/16)*480;
+    document.getElementById('cajaProg').setAttribute('stroke-dashoffset',480-pct);
+    if(t<=0){
+      fi=(fi+1)%4;
+      if(fi===0){ciclo++;if(ciclo>4){cerrarCapsula();return;}}
+      document.getElementById('cajaCiclo').textContent=ciclo;
+      t=4;
+    } else { t--; }
+  }
+  tick(); timer=setInterval(tick,1000);
+}
+
+// ── Grounding ─────────────────────────────────────────────────────────────────
+function grounding(){
+  const items=[
+    {n:5,s:'cosas',v:'ves',ico:'<i class="bi bi-eye-fill"></i>',color:'#7c6eff'},
+    {n:4,s:'cosas',v:'puedes tocar',ico:'<i class="bi bi-hand-index-fill"></i>',color:'#00b87a'},
+    {n:3,s:'cosas',v:'escuchas',ico:'<i class="bi bi-ear-fill"></i>',color:'#17a2b8'},
+    {n:2,s:'cosas',v:'puedes oler',ico:'<i class="bi bi-wind"></i>',color:'#ffb340'},
+    {n:1,s:'cosa',v:'puedes saborear',ico:'<i class="bi bi-moisture"></i>',color:'#ff6b9d'},
+  ];
+  return `
+    <div style="font-size:1.3rem;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:.25rem">Grounding 5-4-3-2-1</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">Vuelve al presente usando tus sentidos</div>
+    <div style="text-align:left">
+      ${items.map(i=>`<div class="grounding-item" style="border-left-color:${i.color}">
+        <span style="font-size:1.1rem">${i.ico}</span>
+        <strong> ${i.n} ${i.s} que ${i.v}:</strong>
+        <div style="color:var(--muted);font-size:.82rem;margin-top:.35rem">Nombra ${i.n} ${i.s} que ${i.v} ahora mismo</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+// ── Escaneo ───────────────────────────────────────────────────────────────────
+function escaneo(){
+  const pasos=[
+    {emoji:'<i class="bi bi-geo-fill"></i>',zona:'Pies y tobillos',msg:'Nota cualquier tension en tus pies. Sueltala con cada exhalacion.'},
+    {emoji:'<i class="bi bi-arrow-down-circle-fill"></i>',zona:'Piernas y rodillas',msg:'Siente el peso de tus piernas. Permites que se hundan y relajen.'},
+    {emoji:'<i class="bi bi-lungs-fill"></i>',zona:'Abdomen y pecho',msg:'Observa tu respiracion. El abdomen sube y baja suavemente.'},
+    {emoji:'<i class="bi bi-people-fill"></i>',zona:'Brazos y manos',msg:'Tus brazos son pesados y calidos. Las manos completamente relajadas.'},
+    {emoji:'<i class="bi bi-cpu-fill"></i>',zona:'Cabeza y cara',msg:'Suelta la tension de la mandibula, frente y ojos. Todo se relaja.'},
+  ];
+  return `
+    <div style="font-size:1.3rem;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:.25rem">Escaneo Corporal</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">Recorre tu cuerpo de pies a cabeza</div>
+    <div style="text-align:left">
+      ${pasos.map(p=>`<div class="grounding-item" style="border-left-color:#ff6b9d">
+        <div style="font-size:1.1rem;margin-bottom:.3rem">${p.emoji} <strong>${p.zona}</strong></div>
+        <div style="color:var(--muted);font-size:.82rem">${p.msg}</div>
+      </div>`).join('')}
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:.75rem;font-style:italic">Dedica 30-60 segundos a cada zona, respirando profundo.</div>`;
+}
+
+// ── Gratitud ──────────────────────────────────────────────────────────────────
+function gratitud(){
+  return `
+    <div style="font-size:1.3rem;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:.25rem">Tres Cosas Buenas</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">Escribe 3 cosas positivas de hoy &mdash; por peque&ntilde;as que sean</div>
+    ${[1,2,3].map(n=>`
+    <div style="margin-bottom:.85rem">
+      <label style="font-size:.8rem;font-weight:700;color:var(--muted);display:block;margin-bottom:.35rem">${n === 1 ? '<i class="bi bi-star-fill"></i>' : n === 2 ? '<i class="bi bi-stars"></i>' : '<i class="bi bi-star-fill"></i>'} Cosa ${n}</label>
+      <textarea id="cosa${n}" class="field-input" style="width:100%;border-radius:var(--r2);resize:none;min-height:64px" rows="2" placeholder="Algo bueno que ocurrio hoy..."></textarea>
+    </div>`).join('')}
+    <div style="font-size:.78rem;color:var(--muted);font-style:italic;margin-bottom:1rem">La gratitud reprograma el cerebro hacia el bienestar con solo 5 minutos al dia.</div>
+    <button onclick="guardarGratitud()" class="btn btn-primary" style="width:100%;justify-content:center"><i class="bi bi-check-circle"></i> Guardar</button>
+    <div id="gratMsg" style="display:none;margin-top:.75rem;text-align:center;font-size:.85rem;color:#00b87a;font-weight:700">&#10003; ¡Guardado! Sigue cultivando la gratitud.</div>`;
+}
+
+// ── Visualizacion ─────────────────────────────────────────────────────────────
+function visualizacion(){
+  return `
+    <div style="font-size:1.3rem;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:.25rem">Lugar Seguro <i class="bi bi-triangle-fill"></i></div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">Cierra los ojos y sigue la guia</div>
+    <div style="text-align:left">
+      ${[
+        'Cierra los ojos. Respira profundo 3 veces.',
+        'Imagina un lugar donde te sientes completamente seguro/a. Puede ser real o imaginario.',
+        'Fijate en los colores y formas de ese lugar. Que ves exactamente?',
+        'Escucha los sonidos de ese lugar. Hay viento, agua, silencio?',
+        'Siente la temperatura. El aire en tu piel. La superficie bajo tus pies.',
+        'Este lugar es tuyo. Siempre puedes volver aqui cuando lo necesites.',
+        'Lleva contigo esa sensacion de calma mientras abres los ojos suavemente.',
+      ].map((p,i)=>`<div class="grounding-item" style="border-left-color:#8884a8">
+        <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.2rem">Paso ${i+1}</div>
+        <div style="font-size:.88rem">${p}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function guardarGratitud(){
+  const c1 = document.getElementById('cosa1')?.value.trim();
+  const c2 = document.getElementById('cosa2')?.value.trim();
+  const c3 = document.getElementById('cosa3')?.value.trim();
+  if(!c1 && !c2 && !c3){ return; }
+  const msg = document.getElementById('gratMsg');
+  if(msg){ msg.style.display='block'; }
+}
+</script>
+{% endblock %}

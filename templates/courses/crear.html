@@ -1,0 +1,154 @@
+{% extends 'base/base.html' %}
+{% block title %}Crear Grupo{% endblock %}
+{% block page_title %}Crear Grupo{% endblock %}
+{% block page_subtitle %}Define el grado y la sección del nuevo grupo{% endblock %}
+
+{% block extra_css %}
+<style>
+.grado-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem}
+.grado-opt{
+  padding:1.1rem .75rem;border-radius:12px;
+  border:2px solid var(--border);background:var(--card);
+  text-align:center;cursor:pointer;transition:all .18s;
+}
+.grado-opt:hover{border-color:rgba(124,110,255,.35);background:rgba(124,110,255,.05)}
+.grado-opt.sel{
+  border-color:var(--accent);background:rgba(124,110,255,.1);
+}
+.grado-opt .g-num{
+  font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:900;
+  background:var(--grd);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1;
+}
+.grado-opt .g-lbl{font-size:.65rem;color:var(--muted);font-weight:700;
+                  text-transform:uppercase;letter-spacing:.6px;margin-top:.2rem}
+.grado-opt.sel .g-lbl{color:var(--accent)}
+
+.seccion-picker{display:flex;gap:.5rem;flex-wrap:wrap}
+.sec-opt{
+  width:44px;height:44px;border-radius:10px;
+  border:2px solid var(--border);background:var(--card);
+  font-weight:800;font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s;color:var(--muted);
+}
+.sec-opt:hover{border-color:rgba(124,110,255,.35);color:var(--ink)}
+.sec-opt.sel{border-color:var(--accent);background:rgba(124,110,255,.1);color:var(--accent)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;margin:0 auto">
+  <div class="card fade-up" style="padding:2rem">
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1.5rem">
+
+        <!-- Grado picker -->
+        <div>
+          <div class="field-label" style="margin-bottom:.65rem">
+            Grado <span style="color:#e0284f">*</span>
+          </div>
+          <div class="grado-picker" id="gradoPicker">
+            {% for val,label in grado_choices %}
+            <div class="grado-opt" data-val="{{ val }}" onclick="selGrado('{{ val }}',this)">
+              <div class="g-num">{{ val }}</div>
+              <div class="g-lbl">Grado</div>
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="grado" id="gradoInput" required>
+        </div>
+
+        <!-- Sección picker -->
+        <div>
+          <div class="field-label" style="margin-bottom:.65rem">Sección</div>
+          <div class="seccion-picker" id="seccionPicker">
+            {% for val,label in seccion_choices %}
+            <div class="sec-opt {% if forloop.first %}sel{% endif %}"
+                 data-val="{{ val }}" onclick="selSec('{{ val }}',this)">
+              {{ val }}
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="seccion" id="seccionInput" value="A">
+        </div>
+
+        <!-- Preview -->
+        <div style="background:rgba(124,110,255,.06);border:1.5px solid rgba(124,110,255,.15);
+                    border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:center;gap:.85rem">
+          <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:900;
+                      background:var(--grd);-webkit-background-clip:text;
+                      -webkit-text-fill-color:transparent;background-clip:text" id="previewNombre">
+            — Selecciona un grado
+          </div>
+        </div>
+
+        <!-- Profesor -->
+        {% if user.es_profesor %}
+        <div>
+          <div class="field-label" style="margin-bottom:.35rem">Profesor asignado</div>
+          <select name="profesor" class="field-input field-select">
+            <option value="">— Sin asignar —</option>
+            {% for p in profesores %}
+            <option value="{{ p.pk }}" {% if p == request.user %}selected{% endif %}>
+              {{ p.get_full_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <!-- Descripción -->
+        <div>
+          <div class="field-label" style="margin-bottom:.35rem">Descripción (opcional)</div>
+          <textarea name="descripcion" class="field-textarea" rows="2"
+            placeholder="Ej: Grupo de la mañana, énfasis en ciencias..."></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:.75rem">
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center" id="submitBtn" disabled>
+            <i class="bi bi-plus-circle-fill"></i> Crear grupo
+          </button>
+          <a href="{% url 'courses:lista' %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let curGrado = '', curSec = 'A';
+
+function selGrado(val, el){
+  document.querySelectorAll('.grado-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+  curGrado = val;
+  document.getElementById('gradoInput').value = val;
+  updatePreview();
+}
+function selSec(val, el){
+  document.querySelectorAll('.sec-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+  curSec = val;
+  document.getElementById('seccionInput').value = val;
+  updatePreview();
+}
+function updatePreview(){
+  const el = document.getElementById('previewNombre');
+  const btn = document.getElementById('submitBtn');
+  if(curGrado){
+    el.textContent = `Grado ${curGrado}${curSec}`;
+    btn.disabled = false;
+  } else {
+    el.textContent = '— Selecciona un grado';
+    btn.disabled = true;
+  }
+}
+</script>
+{% endblock %}

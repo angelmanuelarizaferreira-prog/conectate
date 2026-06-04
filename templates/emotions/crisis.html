@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apoyo de Emergencia &mdash; Conect&aacute;te</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;background:#0d0d14;display:flex;align-items:center;justify-content:center;padding:2rem;-webkit-font-smoothing:antialiased}
+.box{background:#13111f;border:1px solid #2a2540;border-radius:20px;padding:2.5rem;width:100%;max-width:520px;text-align:center}
+.pulse{
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(224,40,79,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.2rem;margin:0 auto 1.5rem;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,40,79,.3)}50%{box-shadow:0 0 0 16px rgba(224,40,79,0)}}
+h1{font-family:'Syne',sans-serif;font-size:1.6rem;color:#fff;letter-spacing:-.5px;margin-bottom:.5rem}
+.sub{font-size:.88rem;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:2rem;max-width:380px;margin-left:auto;margin-right:auto}
+.recurso{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:.75rem;
+  display:flex;align-items:center;gap:1rem;text-align:left;
+}
+.rec-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.rec-title{font-weight:700;font-size:.9rem;color:#fff;margin-bottom:2px}
+.rec-desc{font-size:.78rem;color:rgba(255,255,255,.45);line-height:1.4}
+.btn-crisis{
+  display:inline-flex;align-items:center;gap:.5rem;justify-content:center;
+  width:100%;padding:.85rem;border-radius:12px;
+  font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.9rem;
+  text-decoration:none;cursor:pointer;border:none;
+  margin-top:.75rem;transition:all .18s;
+}
+.btn-primary{background:linear-gradient(135deg,#7c6eff,#ff6b9d);color:#fff;box-shadow:0 4px 16px rgba(124,110,255,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(124,110,255,.4)}
+.btn-ghost{background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1)}
+.btn-ghost:hover{background:rgba(255,255,255,.12);color:#fff}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:1.5rem 0}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="pulse"><i class="bi bi-heart-break-fill" style="color:#e0284f"></i></div>
+  <h1>No est&aacute;s solo/a</h1>
+  <p class="sub">
+    Parece que est&aacute;s pasando por un momento muy dif&iacute;cil.
+    Lo que sientes es v&aacute;lido. Hay personas que pueden ayudarte ahora mismo.
+  </p>
+
+  <div class="recurso">
+    <div class="rec-ico" style="background:rgba(224,40,79,.2)"><i class="bi bi-telephone-fill"></i></div>
+    <div>
+      <div class="rec-title">L&iacute;nea 106 &mdash; Salud Mental</div>
+      <div class="rec-desc">Colombia &bull; Gratuito &bull; 24 horas &bull; Llama ahora</div>
+    </div>
+    <a href="tel:106" style="margin-left:auto;background:rgba(224,40,79,.2);color:#ff6b9d;border:1px solid rgba(224,40,79,.3);border-radius:8px;padding:.35rem .85rem;font-size:.8rem;font-weight:700;text-decoration:none;white-space:nowrap">Llamar</a>
+  </div>
+
+  <div class="recurso">
+    <div class="rec-ico" style="background:rgba(0,184,122,.15)"><i class="bi bi-chat-dots-fill"></i></div>
+    <div>
+      <div class="rec-title">Chat de Crisis &mdash; Ministerio de Salud</div>
+      <div class="rec-desc">minsalud.gov.co &bull; Apoyo por escrito</div>
+    </div>
+  </div>
+
+  <div class="recurso">
+    <div class="rec-ico" style="background:rgba(124,110,255,.2)"><i class="bi bi-building-fill"></i></div>
+    <div>
+      <div class="rec-title">Tu orientador/a del colegio</div>
+      <div class="rec-desc">Busca a un adulto de confianza en tu instituci&oacute;n ahora mismo</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:1.25rem">
+    Recuerda: pedir ayuda es un acto de valent&iacute;a, no de debilidad.
+    Mereces apoyo y hay personas que quieren estar ah&iacute; para ti.
+  </div>
+
+  <a href="{% url 'emotions:chat_lista' %}" class="btn-crisis btn-primary">
+    <i class="bi bi-chat-dots-fill"></i> Hablar con Luna (apoyo emocional IA)
+  </a>
+  <a href="{% url 'dashboard:inicio' %}" class="btn-crisis btn-ghost">
+    &#8592; Volver al inicio
+  </a>
+</div>
+</body>
+</html>

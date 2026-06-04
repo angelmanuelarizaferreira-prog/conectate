@@ -1,0 +1,125 @@
+{% extends 'base/base.html' %}
+{% block title %}Rutina de Cierre{% endblock %}
+{% block page_title %}Rutina de Cierre del Dia{% endblock %}
+{% block page_subtitle %}{{ hoy|date:"l, d \d\e F" }} &mdash; Reflexiona antes de descansar{% endblock %}
+{% block extra_css %}
+<style>
+.rutina-card{
+  background:var(--grd2);border-radius:var(--r);
+  padding:2rem;position:relative;overflow:hidden;border:none;
+}
+.r-orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.2;pointer-events:none}
+.hist-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r2);
+  padding:1rem;transition:all .2s;
+}
+.hist-card:hover{border-color:rgba(124,110,255,.25);box-shadow:var(--shadow)}
+.q-label{
+  font-size:.72rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.8px;
+  margin-bottom:.4rem;display:flex;align-items:center;gap:.4rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Hero -->
+  <div class="rutina-card fade-up">
+    <div class="r-orb" style="width:200px;height:200px;background:#7c6eff;top:-80px;right:-60px"></div>
+    <div class="r-orb" style="width:160px;height:160px;background:#ff6b9d;bottom:-60px;left:40px"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;gap:1.25rem">
+      <div style="font-size:3rem"><i class="bi bi-moon-stars-fill"></i></div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.4rem;color:#fff;letter-spacing:-.3px;margin-bottom:.3rem">
+          {% if ya_completada %}Ya completaste tu rutina de hoy <i class="bi bi-check-circle-fill" style="color:#28a745"></i>{% else %}Cierra el dia con consciencia{% endif %}
+        </div>
+        <div style="font-size:.85rem;color:rgba(255,255,255,.55);line-height:1.6">
+          Tres preguntas rapidas para reflexionar y liberar el dia antes de descansar.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario o vista de completada -->
+  {% if ya_completada %}
+  <div class="card fade-up fade-up-1" style="padding:2rem">
+    <div class="q-label"><i class="bi bi-star-fill" style="color:#f5b800"></i> Que salio bien hoy</div>
+    <div style="font-size:.92rem;line-height:1.7;color:var(--ink);margin-bottom:1.25rem;padding:.85rem;background:var(--surface);border-radius:var(--r2)">{{ rutina_hoy.salio_bien }}</div>
+
+    {% if rutina_hoy.fue_dificil %}
+    <div class="q-label"><i class="bi bi-droplet-fill" style="color:#17a2b8"></i> Que fue dificil</div>
+    <div style="font-size:.92rem;line-height:1.7;color:var(--ink);margin-bottom:1.25rem;padding:.85rem;background:var(--surface);border-radius:var(--r2)">{{ rutina_hoy.fue_dificil }}</div>
+    {% endif %}
+
+    {% if rutina_hoy.manana %}
+    <div class="q-label"><i class="bi bi-star-fill" style="color:#f5b800"></i> Que necesito manana</div>
+    <div style="font-size:.92rem;line-height:1.7;color:var(--ink);padding:.85rem;background:var(--surface);border-radius:var(--r2)">{{ rutina_hoy.manana }}</div>
+    {% endif %}
+
+    <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+      <button onclick="document.getElementById('editForm').classList.toggle('d-none')" class="btn btn-ghost btn-sm">
+        <i class="bi bi-pencil"></i> Editar respuestas
+      </button>
+    </div>
+  </div>
+
+  <div id="editForm" class="card  fade-up" style="display:none" style="padding:2rem">
+  {% else %}
+  <div class="card fade-up fade-up-1" style="padding:2rem">
+  {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+        <div>
+          <div class="q-label"><i class="bi bi-star-fill" style="color:#f5b800"></i> &iquest;Qu&eacute; salio bien hoy? *</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Algo positivo, por peque&ntilde;o que sea</div>
+          <textarea name="salio_bien" class="field-input" style="resize:vertical;min-height:90px;border-radius:var(--r2);width:100%" rows="3"
+            placeholder="Ej: Termine mis tareas, hable con un amigo, hice ejercicio..." required>{{ rutina_hoy.salio_bien }}</textarea>
+        </div>
+        <div>
+          <div class="q-label"><i class="bi bi-droplet-fill" style="color:#17a2b8"></i> &iquest;Qu&eacute; fue dificil? <span style="font-weight:400">(opcional)</span></div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Nombrar lo dificil ayuda a soltarlo</div>
+          <textarea name="fue_dificil" class="field-input" style="resize:vertical;min-height:75px;border-radius:var(--r2);width:100%" rows="2"
+            placeholder="Ej: Me costo concentrarme, tuve un malentendido...">{{ rutina_hoy.fue_dificil }}</textarea>
+        </div>
+        <div>
+          <div class="q-label"><i class="bi bi-star-fill" style="color:#f5b800"></i> &iquest;Qu&eacute; necesito para ma&ntilde;ana? <span style="font-weight:400">(opcional)</span></div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Una intencion o necesidad concreta</div>
+          <textarea name="manana" class="field-input" style="resize:vertical;min-height:75px;border-radius:var(--r2);width:100%" rows="2"
+            placeholder="Ej: Dormir mas, ser mas paciente, descansar...">{{ rutina_hoy.manana }}</textarea>
+        </div>
+        <div style="display:flex;gap:.75rem">
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;padding:.85rem">
+            <i class="bi bi-moon-stars-fill"></i> Guardar y descansar bien
+          </button>
+          <a href="{% url 'dashboard:inicio' %}" class="btn btn-ghost" style="padding:.85rem 1.25rem">Omitir</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Historico -->
+  {% if historico %}
+  <div class="fade-up fade-up-2">
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.85rem">
+      <i class="bi bi-calendar3"></i> Rutinas recientes
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.6rem">
+      {% for r in historico %}
+      {% if r.fecha != hoy %}
+      <div class="hist-card">
+        <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.5rem">{{ r.fecha|date:"l, d/m/Y" }}</div>
+        <div style="font-size:.85rem;color:var(--ink)"><i class="bi bi-star-fill" style="color:#f5b800"></i> {{ r.salio_bien|truncatechars:100 }}</div>
+        {% if r.manana %}<div style="font-size:.82rem;color:var(--muted);margin-top:.25rem"><i class="bi bi-star-fill" style="color:#f5b800"></i> {{ r.manana|truncatechars:80 }}</div>{% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}

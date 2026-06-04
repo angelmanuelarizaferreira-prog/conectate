@@ -1,0 +1,33 @@
+{% extends 'base/base.html' %}
+{% block title %}Editar Usuario{% endblock %}
+{% block page_title %}Editar: {{ usuario.get_full_name }}{% endblock %}
+{% block page_subtitle %}Modifica la informaci&oacute;n del usuario{% endblock %}
+{% block content %}
+<div style="max-width:580px;margin:0 auto">
+  <div class="card fade-up" style="padding:2rem">
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+          <div><label class="field-label">Nombres</label><input type="text" name="first_name" class="field-input" value="{{ usuario.first_name }}"></div>
+          <div><label class="field-label">Apellidos</label><input type="text" name="last_name" class="field-input" value="{{ usuario.last_name }}"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+          <div><label class="field-label">Correo</label><input type="email" name="email" class="field-input" value="{{ usuario.email }}"></div>
+          <div><label class="field-label">Tel&eacute;fono</label><input type="text" name="telefono" class="field-input" value="{{ usuario.telefono }}"></div>
+        </div>
+        {% if user.es_profesor %}<div><label class="field-label">Rol</label><select name="rol" class="field-input field-select">{% for v,l in roles %}<option value="{{ v }}" {% if usuario.rol == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>{% endif %}
+        <div><label class="field-label">Nueva contrase&ntilde;a <span style="color:var(--muted);font-weight:400">(dejar vac&iacute;o para no cambiar)</span></label><input type="password" name="password" class="field-input" minlength="6"></div>
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem;background:var(--surface);border-radius:var(--r2)">
+          <input type="checkbox" name="activo" id="actCk" {% if usuario.activo %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--accent)">
+          <label for="actCk" style="font-size:.85rem;font-weight:600;cursor:pointer">Usuario activo</label>
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:.5rem">
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center"><i class="bi bi-check2"></i> Guardar cambios</button>
+          <a href="{% url 'gestion:usuarios' %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

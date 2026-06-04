@@ -1,0 +1,285 @@
+{% extends 'base/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Hola, {{ user.first_name }} <i class="bi bi-hand-wave"></i>{% endblock %}
+{% block page_subtitle %}{{ hoy|date:"l, d \d\e F \d\e Y" }}{% endblock %}
+{% block extra_css %}
+<style>
+.hero-card{
+  background:var(--grd2);border-radius:var(--r);padding:2rem;
+  position:relative;overflow:hidden;border:none;
+}
+.hero-orb{
+  position:absolute;border-radius:50%;filter:blur(60px);opacity:.25;pointer-events:none;
+}
+.hero-orb1{width:250px;height:250px;background:#7c6eff;top:-80px;right:-60px}
+.hero-orb2{width:180px;height:180px;background:#ff6b9d;bottom:-60px;right:100px}
+.reg-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:1.5rem;
+  display:flex;align-items:center;gap:1.25rem;
+  transition:all .2s;
+}
+.reg-card.done{border-color:rgba(0,200,150,.3);background:rgba(0,200,150,.04)}
+.reg-card.pending{border-color:rgba(124,110,255,.3);background:rgba(124,110,255,.04)}
+.quick-btn{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem;
+  text-decoration:none;color:var(--ink);
+  display:flex;align-items:center;gap:.85rem;
+  transition:all .2s;
+}
+.quick-btn:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow);color:var(--ink)}
+.quick-ico{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;flex-shrink:0;
+}
+.week-bar{
+  display:flex;gap:.5rem;align-items:flex-end;justify-content:space-between;
+  height:80px;
+}
+.wday{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:.35rem;
+}
+.wbar{
+  width:100%;border-radius:6px 6px 0 0;
+  transition:height .4s ease;min-height:4px;
+}
+.wlabel{font-size:.62rem;color:var(--muted);font-weight:600}
+.act-item{
+  display:flex;align-items:center;gap:.85rem;
+  padding:.75rem 1rem;border-radius:var(--r2);
+  transition:background .15s;text-decoration:none;color:var(--ink);
+}
+.act-item:hover{background:rgba(124,110,255,.05)}
+.act-ico{
+  width:38px;height:38px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;flex-shrink:0;
+}
+.curso-pill{
+  padding:.6rem 1rem;background:var(--card);border:1px solid var(--border);
+  border-radius:10px;font-size:.8rem;font-weight:600;color:var(--ink);
+  text-decoration:none;transition:all .2s;display:block;
+}
+.curso-pill:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;gap:1.25rem">
+
+  <!-- Hero -->
+  <div class="hero-card fade-up">
+    <div class="hero-orb hero-orb1"></div>
+    <div class="hero-orb hero-orb2"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.6rem;color:#fff;letter-spacing:-.5px;margin-bottom:.4rem">
+          Tu espacio de bienestar
+        </div>
+        <div style="color:rgba(255,255,255,.55);font-size:.88rem;max-width:420px;line-height:1.6">
+          Cada d&iacute;a que registras c&oacute;mo te sientes es un paso hacia conocerte mejor. &iexcl;T&uacute; puedes!
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.6rem 1rem;text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-size:1.4rem;color:#fff">{{ racha }}</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Racha <i class="bi bi-fire"></i></div>
+        </div>
+        <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.6rem 1rem;text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-size:1.4rem;color:#fff">{{ total_diario }}</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Diario <i class="bi bi-journal-bookmark-fill"></i></div>
+        </div>
+        <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.6rem 1rem;text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-size:1.4rem;color:#fff">{{ inscripciones.count }}</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Cursos <i class="bi bi-books"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado del dia + meta -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem" class="fade-up fade-up-1">
+
+    <!-- Registro del dia -->
+    {% if registro_hoy %}
+    <div class="reg-card done">
+      <div style="font-size:2.5rem"><i class="bi {{ registro_hoy.get_emoji }}"></i></div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.25rem">Registraste hoy <i class="bi bi-check-circle-fill" style="color:#28a745"></i></div>
+        <span class="chip chip-{{ registro_hoy.emocion }}">{{ registro_hoy.get_emocion_display }}</span>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.4rem">Puntaje {{ registro_hoy.puntaje }}/5</div>
+      </div>
+      <a href="{% url 'emotions:registrar' %}" class="btn btn-ghost btn-sm">Editar</a>
+    </div>
+    {% else %}
+    <div class="reg-card pending">
+      <div style="font-size:2.5rem"><i class="bi bi-question-circle-fill"></i></div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.25rem">&iquest;C&oacute;mo te sientes hoy?</div>
+        <div style="font-size:.8rem;color:var(--muted)">A&uacute;n no registraste tu emoci&oacute;n del d&iacute;a</div>
+      </div>
+      <a href="{% url 'emotions:registrar' %}" class="btn btn-primary btn-sm">Registrar</a>
+    </div>
+    {% endif %}
+
+    <!-- Meta semanal -->
+    {% if meta_semana and meta_semana.texto %}
+    <div class="reg-card {% if meta_semana.cumplida %}done{% endif %}" style="{% if not meta_semana.cumplida %}border-color:rgba(255,179,64,.3);background:rgba(255,179,64,.04){% endif %}">
+      <div style="font-size:2rem"><i class="bi bi-bullseye"></i></div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem">Meta de la semana</div>
+        <div style="font-size:.88rem;font-weight:600">{{ meta_semana.texto }}</div>
+      </div>
+      {% if meta_semana.cumplida %}<span class="chip chip-success"><i class="bi bi-check-circle-fill" style="color:#28a745"></i> Cumplida</span>
+      {% else %}<span class="chip chip-warn">En progreso</span>{% endif %}
+    </div>
+    {% else %}
+    <a href="{% url 'emotions:registrar' %}" class="reg-card" style="text-decoration:none;border-style:dashed">
+      <div style="font-size:2rem"><i class="bi bi-bullseye"></i></div>
+      <div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.25rem">Define tu meta semanal</div>
+        <div style="font-size:.8rem;color:var(--muted)">Un objetivo peque&ntilde;o hace grandes diferencias</div>
+      </div>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Accesos rapidos -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem" class="fade-up fade-up-2">
+    <a href="{% url 'emotions:chat_lista' %}" class="quick-btn">
+      <div class="quick-ico" style="background:linear-gradient(135deg,rgba(124,110,255,.15),rgba(255,107,157,.15))"><i class="bi bi-robot"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Luna IA</div><div style="font-size:.73rem;color:var(--muted)">Hablar ahora</div></div>
+    </a>
+    <a href="{% url 'emotions:diario_lista' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(0,212,170,.1)"><i class="bi bi-journal-bookmark-fill"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Mi diario</div><div style="font-size:.73rem;color:var(--muted)">{{ total_diario }} entrada(s)</div></div>
+    </a>
+    <a href="{% url 'emotions:capsulas' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(0,212,170,.12)"><i class="bi bi-lightning-charge-fill"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">C&aacute;psulas</div><div style="font-size:.73rem;color:var(--muted)">T&eacute;cnicas rapidas</div></div>
+    </a>
+    <a href="{% url 'emotions:historial' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(124,110,255,.1)"><i class="bi bi-graph-up-arrow"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Mi historial</div><div style="font-size:.73rem;color:var(--muted)">Ver evoluci&oacute;n</div></div>
+    </a>
+    <a href="{% url 'emotions:mapa_calor' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(255,107,157,.1)"><i class="bi bi-calendar-event-fill"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Mapa emocional</div><div style="font-size:.73rem;color:var(--muted)">A&ntilde;o completo</div></div>
+    </a>
+    <a href="{% url 'emotions:logros' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(255,179,64,.12)"><i class="bi bi-trophy-fill"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Mis logros</div><div style="font-size:.73rem;color:var(--muted)">Ver progreso</div></div>
+    </a>
+    <a href="{% url 'emotions:insights' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(0,184,122,.1)"><i class="bi bi-bar-chart-fill"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Mis insights</div><div style="font-size:.73rem;color:var(--muted)">An&aacute;lisis semanal</div></div>
+    </a>
+    <a href="{% url 'emotions:rutina_cierre' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(124,110,255,.1)"><i class="bi bi-moon-stars-fill"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Cierre del d&iacute;a</div><div style="font-size:.73rem;color:var(--muted)">Reflexi&oacute;n nocturna</div></div>
+    </a>
+    <a href="{% url 'emotions:mensajes' %}" class="quick-btn">
+      <div class="quick-ico" style="background:rgba(255,107,157,.1)"><i class="bi bi-chat-heart-fill"></i></div>
+      <div><div style="font-weight:700;font-size:.85rem">Mensajes</div><div style="font-size:.73rem;color:var(--muted)">De tus profesores</div></div>
+    </a>
+  </div>
+
+  <!-- Emociones de la semana + actividades -->
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:start" class="fade-up fade-up-3">
+
+    <!-- Emociones recientes -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title"><i class="bi bi-heart-fill" style="color:#7c6eff"></i> &Uacute;ltimos 7 d&iacute;as</span>
+        <a href="{% url 'emotions:historial' %}" class="btn btn-ghost btn-sm">Ver historial completo</a>
+      </div>
+      <div style="padding:1rem">
+        <!-- Mini grafica de barras -->
+        <div class="week-bar" style="padding:0 .5rem">
+          {% for reg in ultimos_registros reversed %}
+          <div class="wday">
+            <div style="font-size:1.1rem"><i class="bi {{ reg.get_emoji }}"></i></div>
+            <div class="wbar" style="height:{{ reg.puntaje|floatformat:0 }}0px;background:{% if reg.puntaje >= 4 %}linear-gradient(180deg,#00d4aa,#00b87a){% elif reg.puntaje == 3 %}linear-gradient(180deg,#ffb340,#e09800){% else %}linear-gradient(180deg,#ff6b9d,#e0284f){% endif %}"></div>
+            <div class="wlabel">{{ reg.fecha|date:"d/m" }}</div>
+          </div>
+          {% empty %}
+          <div style="width:100%;text-align:center;color:var(--muted);font-size:.85rem;padding:2rem 0">
+            No hay registros esta semana aun
+          </div>
+          {% endfor %}
+        </div>
+        <!-- Lista -->
+        <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem">
+          {% for reg in ultimos_registros %}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .5rem;border-radius:8px;transition:background .12s" onmouseover="this.style.background='rgba(124,110,255,.04)'" onmouseout="this.style.background=''">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.3rem"><i class="bi {{ reg.get_emoji }}"></i></span>
+              <div>
+                <div style="font-weight:600;font-size:.83rem">{{ reg.get_emocion_display }}</div>
+                <div style="font-size:.72rem;color:var(--muted)">{{ reg.fecha|date:"l, d/m" }}</div>
+              </div>
+            </div>
+            <div class="pdots p{{ reg.puntaje }}">
+              {% for i in "12345" %}<div class="pdot {% if forloop.counter <= reg.puntaje %}on{% endif %}"></div>{% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel derecho -->
+    <div style="display:flex;flex-direction:column;gap:1rem">
+
+      <!-- Actividades pendientes -->
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-hd-title"><i class="bi bi-lightning-charge-fill"></i> Actividades</span>
+          <a href="{% url 'activities:lista' %}" class="btn btn-ghost btn-xs">Ver todas</a>
+        </div>
+        <div style="padding:.5rem 0">
+          {% for act in actividades_pendientes %}
+          <a href="{% url 'activities:detalle' act.pk %}" class="act-item">
+            <div class="act-ico" style="background:rgba(255,179,64,.12)"><i class="bi {{ act.get_tipo_emoji }}"></i></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ act.titulo }}</div>
+              <div style="font-size:.72rem;color:var(--muted)">{{ act.get_tipo_display }}</div>
+            </div>
+            <i class="bi bi-chevron-right" style="color:var(--muted);font-size:.75rem"></i>
+          </a>
+          {% empty %}
+          <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:.82rem">
+            <div style="font-size:1.5rem;margin-bottom:.5rem"><i class="bi bi-stars"></i></div>
+            Todo al d&iacute;a
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Mis cursos -->
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-hd-title"><i class="bi bi-books"></i> Mis cursos</span>
+          {% if not inscripciones %}<a href="{% url 'courses:unirse' %}" class="btn btn-primary btn-xs"><i class="bi bi-plus"></i></a>{% endif %}
+        </div>
+        <div style="padding:.75rem;display:flex;flex-direction:column;gap:.4rem">
+          {% for insc in inscripciones %}
+          <a href="{% url 'courses:detalle' insc.curso.pk %}" class="curso-pill">
+            <div>{{ insc.curso.nombre }}</div>
+            <div style="font-size:.72rem;color:var(--muted);font-weight:400;margin-top:1px">{{ insc.curso.grado }}</div>
+          </a>
+          {% empty %}
+          <div style="padding:.75rem;text-align:center;color:var(--muted);font-size:.82rem">
+            Pide el c&oacute;digo a tu profesor
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

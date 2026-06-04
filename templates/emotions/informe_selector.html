@@ -1,0 +1,60 @@
+{% extends 'base/base.html' %}
+{% block title %}Informe IA{% endblock %}
+{% block page_title %}Informe Emocional IA{% endblock %}
+{% block page_subtitle %}Genera un informe PDF con an&aacute;lisis de inteligencia artificial{% endblock %}
+{% block extra_css %}
+<style>
+.curso-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:1.5rem;transition:all .22s;text-decoration:none;color:var(--ink);display:block;position:relative;overflow:hidden}
+.curso-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--grd);opacity:0;transition:opacity .22s}
+.curso-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(124,110,255,.15);border-color:rgba(124,110,255,.4);color:var(--ink)}
+.curso-card:hover::before{opacity:1}
+.curso-num{font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:900;background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:var(--accent);line-height:1}
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+  <div class="card fade-up" style="background:var(--grd2);border:none;padding:2rem;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:#7c6eff;filter:blur(70px);opacity:.2"></div>
+    <div style="position:absolute;bottom:-60px;right:120px;width:160px;height:160px;border-radius:50%;background:#ff6b9d;filter:blur(60px);opacity:.2"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+      <div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:1.8rem;border:2px solid rgba(255,255,255,.15);flex-shrink:0"><i class="bi bi-bar-chart-fill"></i></div>
+      <div style="flex:1">
+        <div style="font-family:'Syne',sans-serif;font-size:1.4rem;color:#fff;letter-spacing:-.5px;margin-bottom:.4rem">Informe con IA</div>
+        <div style="font-size:.85rem;color:rgba(255,255,255,.55);max-width:500px;line-height:1.65">Selecciona un curso para generar un PDF completo con estad&iacute;sticas detalladas y an&aacute;lisis autom&aacute;tico generado por Claude AI.</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.68rem;color:rgba(255,255,255,.35);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:.5rem">El PDF incluye:</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-bottom:.2rem"><i class="bi bi-check-lg"></i> Resumen ejecutivo</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-bottom:.2rem"><i class="bi bi-check-lg"></i> Estadisticas por estudiante</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-bottom:.2rem"><i class="bi bi-check-lg"></i> Tendencias emocionales</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-bottom:.2rem"><i class="bi bi-check-lg"></i> Analisis IA</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-bottom:.2rem"><i class="bi bi-check-lg"></i> Recomendaciones</div>
+      </div>
+    </div>
+  </div>
+  <div class="fade-up fade-up-1">
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.85rem">Selecciona un curso:</div>
+    {% if cursos %}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+      {% for c in cursos %}
+      <a href="{% url 'emotions:informe_preview' c.pk %}" class="curso-card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem">
+          <div style="width:48px;height:48px;border-radius:14px;background:var(--grd);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;box-shadow:0 4px 14px rgba(124,110,255,.35)"><i class="bi bi-bar-chart-line-fill"></i></div>
+          <i class="bi bi-arrow-right-circle" style="color:var(--accent);font-size:1.1rem;margin-top:.2rem"></i>
+        </div>
+        <div class="curso-num">{{ c.grado }}</div>
+        <div style="font-weight:800;font-size:.95rem;margin-bottom:.2rem;margin-top:.15rem">{{ c.nombre }}</div>
+        {% if c.profesor %}<div style="font-size:.75rem;color:var(--muted);margin-bottom:.65rem;display:flex;align-items:center;gap:.3rem"><i class="bi bi-person-fill" style="color:var(--accent)"></i> {{ c.profesor.get_full_name }}</div>{% endif %}
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+          <span class="chip chip-info"><i class="bi bi-people-fill"></i> {{ c.total_estudiantes }} est.</span>
+          <span class="chip chip-dark" style="font-family:monospace;font-size:.68rem">{{ c.codigo }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty"><span class="empty-ico"><i class="bi bi-clipboard2-fill"></i></span><div class="empty-title">Sin cursos asignados</div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

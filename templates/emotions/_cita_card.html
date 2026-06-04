@@ -1,0 +1,134 @@
+{% load emotion_tags %}
+<div class="cita-card {% if cita.es_urgente %}urgente{% endif %} fade-up">
+
+  <!-- Reporte header -->
+  <div class="rpt-hdr">
+    <div class="rpt-sello">
+      <i class="bi bi-building-fill" style="font-size:1.1rem"></i>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div class="rpt-inst">Conectate — Bienestar Estudiantil</div>
+      <div class="rpt-titulo">
+        {% if cita.es_urgente %}
+          <i class="bi bi-exclamation-triangle-fill" style="color:#ff6b6b;font-size:.85rem"></i>
+        {% endif %}
+        Citación Oficial
+      </div>
+      <div class="rpt-num">Ref. #{{ cita.pk|stringformat:"04d" }} &bull; Emitido {{ cita.created_at|date:"d/m/Y H:i" }}</div>
+    </div>
+    <div>
+      <span class="estado-chip estado-{{ cita.estado }}">
+        {% if cita.estado == 'pendiente' %}<i class="bi bi-clock-fill"></i>
+        {% elif cita.estado == 'confirmada' %}<i class="bi bi-check-circle-fill"></i>
+        {% elif cita.estado == 'cancelada' %}<i class="bi bi-x-circle-fill"></i>
+        {% elif cita.estado == 'completada' %}<i class="bi bi-check2-all"></i>
+        {% endif %}
+        {{ cita.get_estado_display }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="rpt-body">
+
+    <!-- Fecha / hora -->
+    <div class="fecha-badge">
+      <div>
+        <div class="fecha-big">{{ cita.fecha|date:"d" }} {{ cita.fecha|date:"F" }}</div>
+        <div class="fecha-sub">{{ cita.fecha|date:"l Y" }}</div>
+      </div>
+      <div style="width:1px;height:36px;background:var(--border)"></div>
+      <div>
+        <div class="hora-big">{{ cita.hora|time:"H:i" }}</div>
+        <div class="fecha-sub">Hora de presentación</div>
+      </div>
+      {% if cita.esta_proxima %}
+      <span class="chip" style="background:rgba(0,184,122,.1);color:#00b87a;font-size:.68rem;margin-left:auto">
+        <i class="bi bi-alarm-fill"></i> Hoy
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Lugar -->
+    <div class="info-row">
+      <div class="info-ico"><i class="bi bi-geo-alt-fill"></i></div>
+      <div>
+        <div class="info-lbl">Lugar</div>
+        <div class="info-val">{{ cita.get_lugar_display_full }}</div>
+      </div>
+    </div>
+
+    <!-- Motivo -->
+    <div class="info-row">
+      <div class="info-ico"><i class="bi bi-journal-text"></i></div>
+      <div>
+        <div class="info-lbl">Motivo</div>
+        <div class="info-val" style="font-weight:500;white-space:pre-wrap">{{ cita.motivo }}</div>
+      </div>
+    </div>
+
+    <!-- Quién cita / quién es citado -->
+    {% if show_prof %}
+    <div class="info-row">
+      <div class="info-ico"><i class="bi bi-person-fill"></i></div>
+      <div>
+        <div class="info-lbl">Convocado por</div>
+        <div class="info-val">{{ cita.profesor.get_full_name }}</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="info-row">
+      <div class="info-ico"><i class="bi bi-person-badge-fill"></i></div>
+      <div>
+        <div class="info-lbl">Estudiante citado</div>
+        <div class="info-val">{{ cita.estudiante.get_full_name }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- end rpt-body -->
+
+  <!-- Footer con acciones -->
+  <div class="rpt-foot">
+    <div style="font-size:.7rem;color:var(--muted)">
+      <i class="bi bi-shield-lock-fill" style="color:rgba(124,110,255,.4)"></i>
+      Documento confidencial &bull; Solo visible para las partes involucradas
+    </div>
+    <div style="display:flex;gap:.45rem;flex-wrap:wrap">
+
+      {% if es_est and cita.estado == 'pendiente' %}
+        <!-- Estudiante puede confirmar -->
+        <form method="post" action="{% url 'emotions:citacion_estado' cita.pk %}" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="estado" value="confirmada">
+          <button type="submit" class="btn btn-ghost btn-xs" style="color:#00b87a;border-color:rgba(0,184,122,.3)">
+            <i class="bi bi-check-circle-fill"></i> Confirmar asistencia
+          </button>
+        </form>
+      {% endif %}
+
+      {% if not es_est and cita.estado != 'cancelada' and cita.estado != 'completada' %}
+        <!-- Profesor puede completar o cancelar -->
+        {% if cita.estado == 'pendiente' or cita.estado == 'confirmada' %}
+        <form method="post" action="{% url 'emotions:citacion_estado' cita.pk %}" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="estado" value="completada">
+          <button type="submit" class="btn btn-ghost btn-xs" style="color:var(--accent)">
+            <i class="bi bi-check2-all"></i> Marcar completada
+          </button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'emotions:citacion_estado' cita.pk %}" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="estado" value="cancelada">
+          <button type="submit" class="btn btn-ghost btn-xs" style="color:#e0284f"
+            onclick="return confirm('¿Cancelar esta citación?')">
+            <i class="bi bi-x-circle-fill"></i> Cancelar
+          </button>
+        </form>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>

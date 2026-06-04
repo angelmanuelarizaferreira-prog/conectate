@@ -1,0 +1,59 @@
+{% extends 'base/base.html' %}
+{% block title %}Usuarios{% endblock %}
+{% block page_title %}Gesti&oacute;n de Usuarios{% endblock %}
+{% block page_subtitle %}Administra los usuarios del sistema{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+  <div class="card fade-up" style="padding:.85rem 1.25rem">
+    <form method="get" style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:center">
+      <input type="text" name="q" class="field-input" style="flex:1;min-width:180px" placeholder="Buscar por nombre, usuario o correo..." value="{{ q }}">
+      <select name="rol" class="field-input field-select" style="width:auto">
+        <option value="">Todos los roles</option>
+        {% for v,l in roles %}<option value="{{ v }}" {% if rol_filtro == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+      {% if q or rol_filtro %}<a href="{% url 'gestion:usuarios' %}" class="btn btn-ghost btn-sm">Limpiar</a>{% endif %}
+    </form>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center" class="fade-up fade-up-1">
+    <span style="font-size:.82rem;color:var(--muted)">{{ usuarios.count }} usuario(s)</span>
+    <a href="{% url 'gestion:crear_usuario' %}" class="btn btn-primary btn-sm"><i class="bi bi-person-plus"></i> Nuevo usuario</a>
+  </div>
+  <div class="card fade-up fade-up-2">
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th style="padding-left:1.5rem">Nombre</th><th>Usuario</th><th>Rol</th><th>Correo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr>
+            <td style="padding-left:1.5rem">
+              <div style="display:flex;align-items:center;gap:.65rem">
+                <div style="width:30px;height:30px;border-radius:9px;background:{% if u.rol == 'profesor' %}var(--grd){% else %}linear-gradient(135deg,#00b87a,#00d4aa){% endif %};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.68rem;flex-shrink:0">{{ u.first_name|first|upper }}{{ u.last_name|first|upper }}</div>
+                <span style="font-weight:600;font-size:.83rem">{{ u.get_full_name|default:u.username }}</span>
+              </div>
+            </td>
+            <td style="color:var(--muted);font-size:.8rem">@{{ u.username }}</td>
+            <td><span class="chip {% if u.rol == 'profesor' %}chip-info{% else %}chip-success{% endif %}">{{ u.get_rol_display }}</span></td>
+            <td style="color:var(--muted);font-size:.8rem">{{ u.email|default:"—" }}</td>
+            <td><span class="chip {% if u.activo %}chip-success{% else %}chip-dark{% endif %}">{% if u.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
+            <td>
+              <div style="display:flex;gap:.35rem">
+                {% if u.rol == 'estudiante' %}<a href="{% url 'accounts:perfil_estudiante' u.pk %}" class="btn btn-ghost btn-xs" title="Ver perfil"><i class="bi bi-eye-fill"></i></a>{% endif %}
+                <a href="{% url 'gestion:editar_usuario' u.pk %}" class="btn btn-ghost btn-xs"><i class="bi bi-pencil-fill"></i></a>
+                {% if user.es_admin and u.pk != user.pk %}
+                <form method="post" action="{% url 'gestion:eliminar_usuario' u.pk %}" style="display:inline" onsubmit="return confirm('&iquest;Eliminar?')">
+                  {% csrf_token %}<button type="submit" class="btn btn-danger btn-xs"><i class="bi bi-trash-fill"></i></button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--muted)">Sin usuarios</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

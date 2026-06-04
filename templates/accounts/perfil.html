@@ -1,0 +1,100 @@
+{% extends 'base/base.html' %}
+{% block title %}Mi Perfil{% endblock %}
+{% block page_title %}Mi Perfil{% endblock %}
+{% block page_subtitle %}Gestiona tu información personal{% endblock %}
+{% block content %}
+<div style="max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Tarjeta hero de perfil -->
+  <div class="card fade-up" style="background:var(--grd2);border:none;padding:2rem;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,110,255,.15) 0%,rgba(255,107,157,.1) 100%);pointer-events:none"></div>
+    <div style="position:relative;z-index:1">
+      <div style="position:relative;display:inline-block;margin-bottom:1rem">
+        {% if user.foto %}
+          <img src="{{ user.foto.url }}" alt="Foto de perfil" id="foto-preview"
+               style="width:96px;height:96px;border-radius:22px;object-fit:cover;border:3px solid rgba(124,110,255,.6);box-shadow:0 8px 28px rgba(124,110,255,.4)">
+        {% else %}
+          <div id="foto-preview-placeholder" style="width:96px;height:96px;border-radius:22px;background:var(--grd);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;margin:0 auto;box-shadow:0 8px 24px rgba(124,110,255,.35);border:3px solid rgba(124,110,255,.4)">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+          <img src="" alt="" id="foto-preview" style="display:none;width:96px;height:96px;border-radius:22px;object-fit:cover;border:3px solid rgba(124,110,255,.6);box-shadow:0 8px 28px rgba(124,110,255,.4)">
+        {% endif %}
+        <span style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font-size:.6rem;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap;{% if user.es_profesor %}background:linear-gradient(135deg,#7c6eff,#ff6b9d);color:#fff{% elif user.es_estudiante %}background:linear-gradient(135deg,#00d4aa,#7c6eff);color:#fff{% else %}background:linear-gradient(135deg,#ffb340,#ff6b9d);color:#fff{% endif %}">
+          {% if user.es_profesor %}Profesor{% elif user.es_estudiante %}Estudiante{% else %}Padre / Acudiente{% endif %}
+        </span>
+      </div>
+      <div style="margin-top:1.25rem;font-family:'Syne',sans-serif;font-size:1.2rem;color:#fff;letter-spacing:-.3px">{{ user.get_full_name|default:user.username }}</div>
+      <div style="font-size:.8rem;color:rgba(255,255,255,.45);margin-top:.25rem">@{{ user.username }} &bull; {{ user.email|default:"Sin correo" }}</div>
+    </div>
+  </div>
+
+  <!-- Formulario -->
+  <div class="card fade-up fade-up-1" style="padding:2rem">
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem">
+      <i class="bi bi-person-gear" style="color:var(--accent)"></i> Editar información
+    </div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1rem">
+
+        <!-- Zona de foto -->
+        <div style="background:var(--surface);border:2px dashed var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .2s" id="foto-zone" onclick="document.getElementById('foto-input').click()">
+          {% if user.foto %}
+            <img src="{{ user.foto.url }}" id="foto-zone-preview" style="width:72px;height:72px;border-radius:14px;object-fit:cover;margin:0 auto .6rem;border:2px solid var(--accent);display:block" alt="Foto actual">
+            <div style="font-weight:600;font-size:.85rem;margin-bottom:.25rem">Cambiar foto de perfil</div>
+          {% else %}
+            <i class="bi bi-camera-fill" style="font-size:1.6rem;color:var(--accent);display:block;margin-bottom:.5rem"></i>
+            <div style="font-weight:600;font-size:.85rem;margin-bottom:.25rem">Subir foto de perfil</div>
+          {% endif %}
+          <div style="font-size:.75rem;color:var(--muted)">Haz clic aquí o arrastra una imagen &bull; JPG, PNG, WEBP</div>
+          <input type="file" name="foto" id="foto-input" accept="image/*" style="display:none" onchange="previewFoto(this)">
+        </div>
+        <div id="foto-nombre" style="font-size:.75rem;color:var(--accent3);text-align:center;display:none"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+          <div><label class="field-label">Nombres</label><input type="text" name="first_name" class="field-input" value="{{ user.first_name }}" placeholder="Nombres"></div>
+          <div><label class="field-label">Apellidos</label><input type="text" name="last_name" class="field-input" value="{{ user.last_name }}" placeholder="Apellidos"></div>
+        </div>
+        <div><label class="field-label">Correo electrónico</label><input type="email" name="email" class="field-input" value="{{ user.email }}" placeholder="correo@ejemplo.com"></div>
+        <div><label class="field-label">Teléfono</label><input type="text" name="telefono" class="field-input" value="{{ user.telefono|default:'' }}" placeholder="Ej: 300 123 4567"></div>
+        <div><label class="field-label">Descripción / Bio</label><textarea name="bio" class="field-input" rows="3" placeholder="Cuéntanos un poco sobre ti...">{{ user.bio|default:'' }}</textarea></div>
+        <div><label class="field-label">Fecha de nacimiento</label><input type="date" name="fecha_nacimiento" class="field-input" value="{% if user.fecha_nacimiento %}{{ user.fecha_nacimiento|date:'Y-m-d' }}{% endif %}"></div>
+
+        <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.25rem">
+          <div style="font-weight:700;font-size:.85rem;margin-bottom:.85rem;color:var(--muted)">Cambiar contraseña <span style="font-weight:400">(dejar vacío para no cambiar)</span></div>
+          <div><label class="field-label">Nueva contraseña</label><input type="password" name="password" class="field-input" minlength="6" placeholder="Mínimo 6 caracteres"></div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="justify-content:center;margin-top:.5rem"><i class="bi bi-check2"></i> Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Exportar -->
+  {% if user.es_estudiante %}
+  <div class="card fade-up fade-up-2" style="padding:1.5rem">
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:.85rem"><i class="bi bi-download"></i> Mis datos</div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">Descarga un Excel con todo tu historial emocional, entradas del diario y metas semanales.</div>
+    <a href="{% url 'emotions:exportar_datos' %}" class="btn btn-ghost" style="justify-content:center"><i class="bi bi-download"></i> Exportar mis datos en Excel</a>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:.65rem;text-align:center">Compatible con Excel y Google Sheets</div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function previewFoto(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const prev = document.getElementById('foto-preview');
+      const ph = document.getElementById('foto-preview-placeholder');
+      prev.src = e.target.result;
+      prev.style.display = 'block';
+      if (ph) ph.style.display = 'none';
+      const nom = document.getElementById('foto-nombre');
+      nom.textContent = '✓ ' + input.files[0].name + ' lista para subir';
+      nom.style.display = 'block';
+      document.getElementById('foto-zone').style.borderColor = 'var(--accent3)';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base/base.html' %}
+{% load emotion_tags %}
+{% block title %}{% if entrada %}Editar{% else %}Nueva entrada{% endif %}{% endblock %}
+{% block page_title %}{% if entrada %}Editar entrada{% else %}Nueva entrada{% endif %}{% endblock %}
+{% block page_subtitle %}{% if entrada %}{{ entrada.titulo }}{% else %}Tu espacio seguro{% endif %}{% endblock %}
+{% block extra_css %}
+<style>
+.ep{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .9rem;border-radius:50px;border:1.5px solid var(--border);cursor:pointer;font-size:.83rem;font-weight:600;color:var(--muted);transition:all .15s}
+.ep:hover{border-color:var(--accent);color:var(--accent);background:rgba(124,110,255,.05)}
+.ep.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.diary-textarea{width:100%;padding:1rem;border:1.5px solid var(--border);border-radius:var(--r2);font-family:'Plus Jakarta Sans',sans-serif;font-size:.95rem;color:var(--ink);resize:vertical;min-height:300px;line-height:1.8;outline:none;transition:border .18s,box-shadow .18s;background:var(--card)}
+.diary-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,110,255,.1)}
+</style>
+{% endblock %}
+{% block content %}
+<div style="max-width:680px;margin:0 auto">
+  <form method="post" id="df">
+    {% csrf_token %}
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      <div class="card fade-up" style="padding:1.5rem">
+        <label class="field-label">&iquest;C&oacute;mo titulas este momento? <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+        <input type="text" name="titulo" class="field-input" placeholder="Ej: Un dia dificil pero lo logre..." value="{{ entrada.titulo|default:'' }}" maxlength="150">
+      </div>
+      <div class="card fade-up fade-up-1" style="padding:1.5rem">
+        <label class="field-label">&iquest;C&oacute;mo te sientes mientras escribes? <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem">
+          {% for val,label in emociones %}
+          <div class="ep {% if entrada and entrada.emocion_del_dia == val %}on{% endif %}" onclick="pickEmo('{{ val }}',this)"><i class="bi {{ emojis|get_item:val }}"></i> {{ label }}</div>
+          {% endfor %}
+          <div class="ep {% if not entrada or not entrada.emocion_del_dia %}on{% endif %}" onclick="pickEmo('',this)"><i class="bi bi-pencil-square"></i> Sin especificar</div>
+        </div>
+        <input type="hidden" name="emocion_del_dia" id="emoIn" value="{{ entrada.emocion_del_dia|default:'' }}">
+      </div>
+      <div class="card fade-up fade-up-2" style="padding:1.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <label class="field-label" style="margin:0">&iquest;Qu&eacute; quieres escribir? *</label>
+          <span style="font-size:.72rem;color:var(--muted)" id="cc">0 caracteres</span>
+        </div>
+        <textarea name="contenido" id="contIn" class="diary-textarea" placeholder="Este es tu espacio seguro. Escribe lo que sientes, lo que te pas&oacute; hoy..." required>{{ entrada.contenido|default:'' }}</textarea>
+      </div>
+      <div class="card fade-up fade-up-3" style="padding:1rem 1.5rem">
+        <div style="display:flex;align-items:center;gap:1rem">
+          <div style="font-size:1.4rem"><i class="bi bi-lock-fill"></i></div>
+          <div style="flex:1"><div style="font-weight:700;font-size:.88rem">Entrada privada</div><div style="font-size:.78rem;color:var(--muted)">Solo t&uacute; puedes ver esta entrada</div></div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0">
+            <input type="checkbox" name="es_privado" id="privSwitch" {% if not entrada or entrada.es_privado %}checked{% endif %} style="opacity:0;width:0;height:0">
+            <span onclick="this.previousElementSibling.click()" style="position:absolute;cursor:pointer;inset:0;background:{% if not entrada or entrada.es_privado %}var(--accent){% else %}var(--border){% endif %};border-radius:24px;transition:.2s" id="swBg"></span>
+            <span onclick="this.previousElementSibling.previousElementSibling.click()" id="swKnob" style="position:absolute;left:{% if not entrada or entrada.es_privado %}22px{% else %}2px{% endif %};top:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.2)"></span>
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:.75rem" class="fade-up fade-up-4">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;padding:.8rem">
+          <i class="bi bi-journal-check"></i> {% if entrada %}Guardar cambios{% else %}Guardar en mi diario{% endif %}
+        </button>
+        <a href="{% if entrada %}{% url 'emotions:diario_detalle' entrada.pk %}{% else %}{% url 'emotions:diario_lista' %}{% endif %}" class="btn btn-ghost" style="padding:.8rem 1.25rem">Cancelar</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const ta=document.getElementById('contIn');
+const cc=document.getElementById('cc');
+function upd(){cc.textContent=ta.value.length.toLocaleString()+' caracteres'}
+ta.addEventListener('input',upd);upd();
+function pickEmo(v,el){
+  document.querySelectorAll('.ep').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('emoIn').value=v;
+}
+const sw=document.getElementById('privSwitch');
+sw.addEventListener('change',function(){
+  document.getElementById('swBg').style.background=this.checked?'var(--accent)':' var(--border)';
+  document.getElementById('swKnob').style.left=this.checked?'22px':'2px';
+});
+const k='diary_{{ entrada.pk|default:"new" }}';
+{% if not entrada %}
+try{const s=localStorage.getItem(k);if(s){const d=JSON.parse(s);if(d.c&&!ta.value)ta.value=d.c;if(d.t&&!document.querySelector('[name=titulo]').value)document.querySelector('[name=titulo]').value=d.t;upd()}}catch(e){}
+{% endif %}
+ta.addEventListener('input',()=>{try{localStorage.setItem(k,JSON.stringify({c:ta.value,t:document.querySelector('[name=titulo]').value}))}catch(e){}});
+document.getElementById('df').addEventListener('submit',()=>{try{localStorage.removeItem(k)}catch(e){}}});
+// Deteccion de crisis
+const CRISIS_WORDS = ['suicidio','suicidarme','quitarme la vida','no quiero vivir','hacerme dano','autolesion','cortarme','no puedo mas','desaparecer','morir','quiero morir','acabar con todo'];
+let crisisAlertShown = false;
+function checkCrisis(texto) {
+  if(crisisAlertShown) return;
+  const t = texto.toLowerCase();
+  if(CRISIS_WORDS.some(w => t.includes(w))) {
+    crisisAlertShown = true;
+    const div = document.createElement('div');
+    div.id = 'crisisAlert';
+    div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(13,13,20,.9);display:flex;align-items:center;justify-content:center;padding:2rem';
+    div.innerHTML = `
+      <div style="background:#13111f;border:1px solid rgba(224,40,79,.4);border-radius:20px;padding:2rem;max-width:420px;text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:.75rem"><i class="bi bi-heart-break-fill" style="color:#e0284f"></i></div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;color:#fff;margin-bottom:.5rem">Parece que estas pasando algo dificil</div>
+        <div style="font-size:.85rem;color:rgba(255,255,255,.55);line-height:1.7;margin-bottom:1.5rem">Lo que sientes importa. Hay personas que pueden ayudarte ahora mismo.</div>
+        <a href="/emotions/crisis/" style="display:block;background:linear-gradient(135deg,#7c6eff,#ff6b9d);color:#fff;border-radius:12px;padding:.85rem;font-weight:700;font-size:.9rem;text-decoration:none;margin-bottom:.6rem">Ver recursos de apoyo</a>
+        <button onclick="document.getElementById('crisisAlert').remove();crisisAlertShown=false;" style="display:block;width:100%;background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:.75rem;font-size:.85rem;cursor:pointer">Continuar escribiendo</button>
+      </div>`;
+    document.body.appendChild(div);
+  }
+}
+ta.addEventListener('input', () => checkCrisis(ta.value));
+</script>
+{% endblock %}

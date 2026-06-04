@@ -1,0 +1,133 @@
+{% extends 'base/base.html' %}
+{% block title %}Panel Institucional{% endblock %}
+{% block page_title %}Panel Institucional{% endblock %}
+{% block page_subtitle %}Bienestar emocional de toda la instituci&oacute;n &mdash; &uacute;ltimos 30 d&iacute;as{% endblock %}
+{% block extra_css %}
+<style>
+.kpi-inst{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;position:relative;overflow:hidden;text-align:center}
+.kpi-inst-val{font-family:'Syne',sans-serif;font-size:2.2rem;color:var(--ink);line-height:1;margin:.35rem 0 .2rem}
+.kpi-inst-lbl{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+.kpi-glow{position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;filter:blur(40px);opacity:.2;pointer-events:none}
+.insight-box{background:linear-gradient(135deg,rgba(124,110,255,.08),rgba(0,212,170,.05));border:1.5px solid rgba(124,110,255,.2);border-radius:var(--r);padding:1.5rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem" class="fade-up">
+    <div class="kpi-inst"><div class="kpi-glow" style="background:#7c6eff"></div><div class="kpi-inst-lbl">Estudiantes</div><div class="kpi-inst-val">{{ total_est }}</div></div>
+    <div class="kpi-inst"><div class="kpi-glow" style="background:#00d4aa"></div><div class="kpi-inst-lbl">Profesores</div><div class="kpi-inst-val">{{ total_prof }}</div></div>
+    <div class="kpi-inst"><div class="kpi-glow" style="background:#ffb340"></div><div class="kpi-inst-lbl">Registros (30d)</div><div class="kpi-inst-val">{{ total_regs }}</div></div>
+    <div class="kpi-inst"><div class="kpi-glow" style="background:#00b87a"></div><div class="kpi-inst-lbl">Promedio general</div><div class="kpi-inst-val" style="font-size:1.8rem">{{ prom_gral|default:"—" }}</div></div>
+    <div class="kpi-inst"><div class="kpi-glow" style="background:#e0284f"></div><div class="kpi-inst-lbl">Sin registrar 7d</div><div class="kpi-inst-val" style="{% if sin_registrar > 5 %}color:#e0284f{% endif %}">{{ sin_registrar }}</div></div>
+  </div>
+
+  <!-- Participacion diaria + dia de la semana -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem" class="fade-up fade-up-1">
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-calendar3"></i> Participaci&oacute;n diaria &mdash; &uacute;ltimos 30 d&iacute;as</span></div>
+      <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gDiario" height="110"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-calendar3"></i> Promedio por d&iacute;a de la semana</span></div>
+      <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gSemana" height="170"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Distribucion emocional + comparativa cursos -->
+  <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:1.25rem" class="fade-up fade-up-2">
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-pie-chart-fill"></i> Distribuci&oacute;n emocional global</span></div>
+      <div style="padding:1.25rem;display:flex;align-items:center;justify-content:center"><canvas id="gEmo" style="max-width:220px" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-books"></i> Promedio por curso (7 d&iacute;as)</span></div>
+      <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gCursos" height="170"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Insight institucional -->
+  <div class="insight-box fade-up fade-up-3">
+    <div style="display:flex;align-items:flex-start;gap:1rem">
+      <div style="font-size:2rem;flex-shrink:0"><i class="bi bi-cpu-fill"></i></div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;color:var(--ink);margin-bottom:.5rem">Lectura institucional autom&aacute;tica</div>
+        <div style="font-size:.88rem;color:var(--muted);line-height:1.75">
+          {% if prom_gral %}
+            {% if prom_gral >= 3.8 %}
+              El bienestar general de la instituci&oacute;n est&aacute; en un nivel <strong style="color:#00b87a">positivo</strong> ({{ prom_gral }}/5).
+              La mayor&iacute;a de los estudiantes reportan emociones favorables.
+            {% elif prom_gral >= 3.0 %}
+              El bienestar general se encuentra en un nivel <strong style="color:#f5b800">intermedio</strong> ({{ prom_gral }}/5).
+              Hay margen de mejora, especialmente en los grupos con mayor estres academico.
+            {% else %}
+              El bienestar general presenta niveles <strong style="color:#e0284f">cr&iacute;ticos</strong> ({{ prom_gral }}/5).
+              Se recomienda revisar urgentemente los cursos con semaforo rojo y activar protocolos de apoyo.
+            {% endif %}
+            {{ sin_registrar }} estudiante(s) no han registrado en los &uacute;ltimos 7 d&iacute;as &mdash;
+            considera contactarlos directamente.
+          {% else %}
+            A&uacute;n no hay suficientes datos para generar un an&aacute;lisis institucional.
+            Motiva a los estudiantes a registrar sus emociones diariamente.
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Participacion diaria
+new Chart(document.getElementById('gDiario').getContext('2d'),{
+  type:'bar',
+  data:{
+    labels:{{ fechas_json|safe }},
+    datasets:[{label:'Registros',data:{{ regs_json|safe }},backgroundColor:'rgba(124,110,255,.65)',borderRadius:6,hoverBackgroundColor:'rgba(124,110,255,.9)'}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{maxTicksLimit:10,font:{size:10}},grid:{display:false}}}}
+});
+
+// Promedio por dia de la semana
+const pds = {{ prom_semana_json|safe }};
+new Chart(document.getElementById('gSemana').getContext('2d'),{
+  type:'radar',
+  data:{
+    labels:{{ dias_semana_json|safe }},
+    datasets:[{data:pds,borderColor:'#7c6eff',backgroundColor:'rgba(124,110,255,.12)',borderWidth:2,pointBackgroundColor:'#7c6eff',pointRadius:4}]
+  },
+  options:{responsive:true,scales:{r:{min:0,max:5,ticks:{stepSize:1,font:{size:9}},grid:{color:'rgba(0,0,0,.06)'}}},plugins:{legend:{display:false}}}
+});
+
+// Distribucion emocional
+const em = {{ conteo_emo_json|safe }};
+new Chart(document.getElementById('gEmo').getContext('2d'),{
+  type:'doughnut',
+  data:{
+    labels:['Feliz','Tranquilo','Estresado','Triste','Enojado'],
+    datasets:[{data:[em.feliz,em.tranquilo,em.estresado,em.triste,em.enojado],backgroundColor:['#00b87a','#17a2b8','#f5b800','#8884a8','#e0284f'],borderWidth:0,hoverOffset:6}]
+  },
+  options:{responsive:true,cutout:'68%',plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10}},tooltip:{callbacks:{label:function(ctx){const total=ctx.dataset.data.reduce((a,b)=>a+b,0);const val=ctx.parsed;const pct=total>0?Math.round(val/total*100):0;return ' '+ctx.label+': '+val+' ('+pct+'%)';}}}}}
+
+});
+
+// Comparativa por curso
+const cd = {{ cursos_data_json|safe }};
+new Chart(document.getElementById('gCursos').getContext('2d'),{
+  type:'bar',
+  data:{
+    labels:cd.map(c=>c.nombre),
+    datasets:[{data:cd.map(c=>c.prom||0),backgroundColor:cd.map(c=>!c.prom?'rgba(136,132,168,.3)':c.prom>=3.5?'rgba(0,184,122,.7)':c.prom>=2.5?'rgba(245,184,0,.7)':'rgba(224,40,79,.7)'),borderRadius:8}]
+  },
+  options:{
+    indexAxis:'y',responsive:true,
+    scales:{x:{min:0,max:5,ticks:{stepSize:1,font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{font:{size:10}},grid:{display:false}}},
+    plugins:{legend:{display:false}}
+  }
+});
+</script>
+{% endblock %}

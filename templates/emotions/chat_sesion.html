@@ -1,0 +1,263 @@
+{% extends 'base/base.html' %}
+{% block title %}Luna IA{% endblock %}
+{% block page_title %}Luna <i class="bi bi-heart-fill" style="color:#7c6eff"></i>{% endblock %}
+{% block page_subtitle %}Tu asistente de apoyo emocional{% endblock %}
+{% block extra_css %}
+<style>
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 130px);min-height:500px;border-radius:var(--r);overflow:hidden;box-shadow:0 8px 40px rgba(13,13,20,.12)}
+.chat-hdr{
+  background:var(--grd2);padding:1rem 1.5rem;
+  display:flex;align-items:center;gap:.85rem;flex-shrink:0;
+}
+.luna-ring{
+  width:44px;height:44px;border-radius:50%;
+  background:var(--grd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;
+  box-shadow:0 0 0 3px rgba(124,110,255,.3);
+  position:relative;
+}
+.online-dot{
+  position:absolute;bottom:1px;right:1px;
+  width:10px;height:10px;border-radius:50%;
+  background:#00d4aa;border:2px solid #1c1c2e;
+}
+.chat-msgs{
+  flex:1;overflow-y:auto;padding:1.5rem;
+  background:#f7f6fd;
+  display:flex;flex-direction:column;gap:.85rem;
+  scroll-behavior:smooth;
+}
+.chat-msgs::-webkit-scrollbar{width:4px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.msg-row{display:flex;align-items:flex-end;gap:.6rem}
+.msg-row.user{flex-direction:row-reverse}
+.bubble{
+  max-width:68%;padding:.75rem 1rem;
+  border-radius:18px;font-size:.875rem;line-height:1.65;
+  word-break:break-word;white-space:pre-wrap;
+}
+.bubble.assistant{
+  background:#fff;color:var(--ink);
+  border-radius:18px 18px 18px 4px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);
+  border:1px solid var(--border);
+}
+.bubble.user{
+  background:var(--grd);color:#fff;
+  border-radius:18px 18px 4px 18px;
+}
+.msg-ava{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;
+}
+.msg-ava.luna{background:var(--grd)}
+.msg-ava.user{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:.72rem}
+.msg-time{font-size:.62rem;color:var(--muted);padding:0 .25rem;margin-top:2px}
+.msg-row.user .msg-time{text-align:right}
+.typing-row{display:flex;align-items:flex-end;gap:.6rem;display:none}
+.typing-row.show{display:flex}
+.dots{display:flex;gap:4px;align-items:center;padding:.75rem 1rem}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);opacity:.4;animation:bop 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes bop{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
+.chat-foot{
+  background:#fff;padding:1rem 1.25rem;
+  border-top:1px solid var(--border);flex-shrink:0;
+}
+.inp-row{display:flex;align-items:flex-end;gap:.75rem}
+.chat-inp{
+  flex:1;padding:.7rem 1rem;
+  border:1.5px solid var(--border);border-radius:50px;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:.875rem;
+  color:var(--ink);outline:none;resize:none;
+  transition:border .18s,box-shadow .18s;
+  max-height:110px;overflow-y:auto;line-height:1.5;
+}
+.chat-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,110,255,.1)}
+.send-btn{
+  width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  background:var(--grd);border:none;color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;transition:all .18s;
+  box-shadow:0 4px 12px rgba(124,110,255,.3);
+}
+.send-btn:hover:not(:disabled){transform:scale(1.08)}
+.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.hint-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.85rem}
+.hint{
+  padding:.3rem .85rem;border-radius:50px;
+  border:1px solid var(--border);background:var(--card);
+  font-size:.77rem;font-weight:600;color:var(--accent);
+  cursor:pointer;transition:all .15s;
+}
+.hint:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.err-bar{
+  background:#fff1f3;border:1px solid #ffd5de;border-radius:10px;
+  padding:.6rem 1rem;font-size:.8rem;color:#8a0e2e;
+  display:none;margin:0 .5rem .5rem;
+}
+.err-bar.show{display:block}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:780px;margin:0 auto">
+  {% if not api_ok %}
+  <div style="background:#fff1f3;border:1.5px solid #ffd5de;border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;font-size:.85rem;color:#8a0e2e;display:flex;align-items:center;gap:.75rem">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size:1.2rem;flex-shrink:0"></i>
+    <div><strong>API no configurada.</strong> Agrega tu <code>ANTHROPIC_API_KEY</code> en <code>conectate/settings.py</code> para activar Luna.</div>
+  </div>
+  {% endif %}
+
+  <div class="chat-wrap fade-up">
+
+    <!-- Header -->
+    <div class="chat-hdr">
+      <div class="luna-ring"><i class="bi bi-robot"></i><div class="online-dot"></div></div>
+      <div style="flex:1">
+        <div style="font-weight:700;color:#fff;font-size:.95rem">Luna &mdash; Apoyo Emocional</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.4rem">
+          <span style="width:6px;height:6px;border-radius:50%;background:#00d4aa;display:inline-block"></span>
+          En l&iacute;nea &bull; Todo es confidencial
+        </div>
+      </div>
+      <a href="{% url 'emotions:chat_lista' %}" class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.12)">
+        <i class="bi bi-arrow-left"></i> Volver
+      </a>
+    </div>
+
+    <!-- Mensajes -->
+    <div class="chat-msgs" id="chatMsgs">
+      {% for msg in mensajes %}
+      <div class="msg-row {{ msg.rol }}">
+        {% if msg.rol == 'assistant' %}
+        <div class="msg-ava luna"><i class="bi bi-robot"></i></div>
+        {% else %}
+        <div class="msg-ava user">{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</div>
+        {% endif %}
+        <div>
+          <div class="bubble {{ msg.rol }}">{{ msg.contenido }}</div>
+          <div class="msg-time">{{ msg.created_at|time:"H:i" }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="typing-row" id="typing">
+        <div class="msg-ava luna"><i class="bi bi-robot"></i></div>
+        <div class="bubble assistant" style="padding:0">
+          <div class="dots">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="err-bar" id="errBar"></div>
+
+    <!-- Sugerencias -->
+    {% if mensajes.count <= 2 %}
+    <div style="padding:.75rem 1.25rem 0">
+      <div class="hint-chips">
+        <div class="hint" onclick="useHint(this)">Me siento ansioso/a hoy</div>
+        <div class="hint" onclick="useHint(this)">Tuve un dia dificil</div>
+        <div class="hint" onclick="useHint(this)">No se por que me siento triste</div>
+        <div class="hint" onclick="useHint(this)">Quiero hablar de algo</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Input -->
+    <div class="chat-foot">
+      <div class="inp-row">
+        <textarea id="msgIn" class="chat-inp" rows="1"
+          placeholder="Escribe lo que sientes..."
+          maxlength="1000"
+          {% if not api_ok %}disabled{% endif %}></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMsg()" {% if not api_ok %}disabled{% endif %}>
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:.4rem;padding:0 .25rem">
+        <span style="font-size:.68rem;color:var(--muted)">Enter para enviar &bull; Shift+Enter nueva l&iacute;nea</span>
+        <span style="font-size:.68rem;color:var(--muted)" id="cc">0/1000</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const URL_SEND="{% url 'emotions:chat_enviar' sesion.pk %}";
+const CSRF="{{ csrf_token }}";
+const msgs=document.getElementById('chatMsgs');
+const inp=document.getElementById('msgIn');
+const btn=document.getElementById('sendBtn');
+const typing=document.getElementById('typing');
+const err=document.getElementById('errBar');
+const cc=document.getElementById('cc');
+const initials="{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}";
+
+function scrollDown(){msgs.scrollTop=msgs.scrollHeight}
+scrollDown();
+
+inp.addEventListener('input',function(){
+  this.style.height='auto';
+  this.style.height=Math.min(this.scrollHeight,110)+'px';
+  cc.textContent=this.value.length+'/1000';
+});
+inp.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}
+});
+
+function useHint(el){inp.value=el.textContent;inp.dispatchEvent(new Event('input'));inp.focus();el.closest('.hint-chips')?.remove()}
+
+function addBubble(text,role,time){
+  const wrap=document.createElement('div');
+  wrap.className='msg-row '+role;
+  const ava=document.createElement('div');
+  ava.className='msg-ava '+(role==='assistant'?'luna':'user');
+  ava.innerHTML=role==='assistant'?'<i class="bi bi-robot" style="font-size:1rem"></i>':initials;
+  const inner=document.createElement('div');
+  const bubble=document.createElement('div');
+  bubble.className='bubble '+role;
+  bubble.textContent=text;
+  const t=document.createElement('div');
+  t.className='msg-time';
+  t.textContent=time||new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  inner.appendChild(bubble);inner.appendChild(t);
+  if(role==='user'){wrap.appendChild(inner);wrap.appendChild(ava)}
+  else{wrap.appendChild(ava);wrap.appendChild(inner)}
+  msgs.insertBefore(wrap,typing);
+  scrollDown();
+}
+
+async function sendMsg(){
+  const text=inp.value.trim();
+  if(!text)return;
+  addBubble(text,'user');
+  inp.value='';inp.style.height='auto';cc.textContent='0/1000';
+  btn.disabled=true;err.classList.remove('show');
+  typing.classList.add('show');scrollDown();
+  try{
+    const r=await fetch(URL_SEND,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body:JSON.stringify({mensaje:text})
+    });
+    const d=await r.json();
+    typing.classList.remove('show');
+    if(d.ok)addBubble(d.respuesta,'assistant');
+    else{err.innerHTML='<i class="bi bi-x-circle-fill" style="color:#e0284f"></i> '+(d.error||'Error al conectar');err.classList.add('show')}
+  }catch(e){
+    typing.classList.remove('show');
+    err.innerHTML='<i class="bi bi-x-circle-fill" style="color:#e0284f"></i> No se pudo conectar. Verifica tu conexion.';
+    err.classList.add('show');
+  }finally{btn.disabled=false;inp.focus()}
+}
+</script>
+{% endblock %}

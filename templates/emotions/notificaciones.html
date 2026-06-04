@@ -1,0 +1,41 @@
+{% extends 'base/base.html' %}
+{% block title %}Notificaciones{% endblock %}
+{% block page_title %}Notificaciones{% endblock %}
+{% block page_subtitle %}Tus avisos y novedades recientes{% endblock %}
+{% block extra_css %}
+<style>
+.notif-item{display:flex;align-items:flex-start;gap:.85rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border);transition:background .12s}
+.notif-item:hover{background:rgba(124,110,255,.03)}
+.notif-item.nueva{background:rgba(124,110,255,.05)}
+.notif-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+</style>
+{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <div class="card fade-up">
+    {% for n in notificaciones %}
+    {% if n.url %}
+    <a href="{{ n.url }}" style="text-decoration:none;color:inherit;display:block">
+    {% endif %}
+    <div class="notif-item {% if not n.leida %}nueva{% endif %}">
+      <div class="notif-ico" style="background:{% if n.tipo == 'logro' %}rgba(255,179,64,.15){% elif n.tipo == 'mensaje' %}rgba(124,110,255,.15){% elif n.tipo == 'encuesta' %}rgba(0,212,170,.15){% elif n.tipo == 'reto' %}rgba(255,107,157,.15){% elif n.tipo == 'alerta' %}rgba(224,40,79,.15){% else %}rgba(136,132,168,.15){% endif %}">
+        {% if n.tipo == 'logro' %}<i class="bi bi-trophy-fill"></i>{% elif n.tipo == 'mensaje' %}<i class="bi bi-chat-dots-fill"></i>{% elif n.tipo == 'encuesta' %}<i class="bi bi-clipboard2-fill"></i>{% elif n.tipo == 'reto' %}<i class="bi bi-flag-fill"></i>{% elif n.tipo == 'alerta' %}<i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i>{% else %}<i class="bi bi-bell-fill"></i>{% endif %}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.88rem;margin-bottom:.2rem">{{ n.titulo }}</div>
+        {% if n.cuerpo %}<div style="font-size:.82rem;color:var(--muted);margin-bottom:.2rem;line-height:1.5">{{ n.cuerpo|truncatechars:100 }}</div>{% endif %}
+        <div style="font-size:.72rem;color:var(--muted)">{{ n.created_at|timesince }} atr&aacute;s</div>
+      </div>
+      {% if not n.leida %}<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:.35rem"></div>{% endif %}
+    </div>
+    {% if n.url %}</a>{% endif %}
+    {% empty %}
+    <div class="empty" style="padding:4rem">
+      <span class="empty-ico"><i class="bi bi-bell-fill"></i></span>
+      <div class="empty-title">Sin notificaciones</div>
+      <div class="empty-sub">Cuando haya novedades aparecer&aacute;n aqu&iacute;.</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

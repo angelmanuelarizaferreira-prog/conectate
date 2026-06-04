@@ -1,0 +1,112 @@
+{% extends 'base/base.html' %}
+{% block title %}Citaciones{% endblock %}
+{% block page_title %}Citaciones de mis hijos{% endblock %}
+{% block page_subtitle %}Convocatorias y reuniones programadas por los profesores{% endblock %}
+
+{% block extra_css %}
+<style>
+.cita-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:1.25rem 1.5rem;
+  display:flex;gap:1.25rem;align-items:flex-start;
+  transition:box-shadow .16s,border-color .16s;
+}
+.cita-card:hover{box-shadow:var(--shadow);border-color:rgba(124,110,255,.25)}
+.cita-card.urgente{border-color:rgba(224,40,79,.3);background:rgba(224,40,79,.03)}
+.cita-fecha{
+  min-width:64px;text-align:center;
+  background:rgba(124,110,255,.08);border-radius:12px;
+  padding:.6rem .5rem;flex-shrink:0;
+}
+.cita-dia{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:900;color:var(--accent);line-height:1}
+.cita-mes{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.estado-badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.25rem .65rem;border-radius:50px;font-size:.68rem;font-weight:700;
+}
+.estado-pendiente{background:rgba(245,184,0,.12);color:#c49a00}
+.estado-confirmada{background:rgba(0,184,122,.12);color:#00875a}
+.estado-cancelada{background:rgba(224,40,79,.12);color:#e0284f}
+.estado-completada{background:rgba(100,100,120,.12);color:var(--muted)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1rem">
+
+  {% if citaciones %}
+  <!-- Resumen -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.85rem" class="fade-up">
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(124,110,255,.1)"><i class="bi bi-calendar-event-fill"></i></div>
+      <div><div class="stat-val">{{ citaciones|length }}</div><div class="stat-lbl">Total citaciones</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(245,184,0,.1)"><i class="bi bi-clock-fill" style="color:#f5b800"></i></div>
+      <div>
+        <div class="stat-val">{{ pendientes }}</div>
+        <div class="stat-lbl">Pendientes / Próximas</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(224,40,79,.1)"><i class="bi bi-exclamation-triangle-fill" style="color:#e0284f"></i></div>
+      <div>
+        <div class="stat-val">{{ urgentes }}</div>
+        <div class="stat-lbl">Urgentes</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:.75rem" class="fade-up fade-up-1">
+    {% for cita in citaciones %}
+    <div class="cita-card {% if cita.es_urgente %}urgente{% endif %}">
+      <!-- Fecha -->
+      <div class="cita-fecha">
+        <div class="cita-dia">{{ cita.fecha|date:"d" }}</div>
+        <div class="cita-mes">{{ cita.fecha|date:"M Y" }}</div>
+        <div style="font-size:.72rem;color:var(--accent);font-weight:700;margin-top:.25rem">{{ cita.hora|time:"H:i" }}</div>
+      </div>
+
+      <!-- Info -->
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem">
+          <span class="estado-badge estado-{{ cita.estado }}">
+            {% if cita.estado == 'pendiente' %}<i class="bi bi-clock"></i>
+            {% elif cita.estado == 'confirmada' %}<i class="bi bi-check-circle-fill"></i>
+            {% elif cita.estado == 'cancelada' %}<i class="bi bi-x-circle-fill"></i>
+            {% else %}<i class="bi bi-check2-all"></i>{% endif %}
+            {{ cita.get_estado_display }}
+          </span>
+          {% if cita.es_urgente %}
+          <span style="background:rgba(224,40,79,.12);color:#e0284f;font-size:.68rem;font-weight:700;padding:.2rem .55rem;border-radius:50px">
+            <i class="bi bi-exclamation-triangle-fill"></i> Urgente
+          </span>
+          {% endif %}
+        </div>
+
+        <div style="font-weight:700;font-size:.9rem;color:var(--ink);margin-bottom:.3rem">
+          {{ cita.estudiante.get_full_name }}
+        </div>
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">
+          <i class="bi bi-person-fill" style="color:var(--accent)"></i> Prof. {{ cita.profesor.get_full_name }}
+          &nbsp;&bull;&nbsp;
+          <i class="bi bi-geo-alt-fill" style="color:var(--accent)"></i> {{ cita.get_lugar_display_full }}
+        </div>
+        <div style="font-size:.82rem;color:var(--ink);background:rgba(124,110,255,.05);border-radius:8px;padding:.5rem .75rem;border-left:3px solid rgba(124,110,255,.3)">
+          {{ cita.motivo }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty fade-up">
+    <span class="empty-ico"><i class="bi bi-calendar-check-fill"></i></span>
+    <div class="empty-title">Sin citaciones activas</div>
+    <div class="empty-sub">Cuando un profesor convoque a uno de tus hijos, aparecerá aquí.</div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

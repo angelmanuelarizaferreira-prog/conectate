@@ -1,0 +1,38 @@
+{% extends 'base/base.html' %}
+{% block title %}Cursos{% endblock %}
+{% block page_title %}Gesti&oacute;n de Cursos{% endblock %}
+{% block page_subtitle %}Administra los cursos del sistema{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+  <div style="display:flex;justify-content:space-between;align-items:center" class="fade-up">
+    <span style="font-size:.82rem;color:var(--muted)">{{ cursos.count }} curso(s)</span>
+    <a href="{% url 'courses:crear' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus"></i> Nuevo curso</a>
+  </div>
+  <div class="card fade-up fade-up-1">
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th style="padding-left:1.5rem">Nombre</th><th>Grado</th><th>Profesor</th><th>Estudiantes</th><th>C&oacute;digo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for c in cursos %}
+          <tr>
+            <td style="padding-left:1.5rem;font-weight:600;font-size:.83rem">{{ c.nombre }}</td>
+            <td style="color:var(--muted);font-size:.8rem">{{ c.get_grado_display }} &mdash; Secc. {{ c.seccion }}</td>
+            <td style="color:var(--muted);font-size:.8rem">{{ c.profesor.get_full_name|default:"—" }}</td>
+            <td><span class="chip chip-info">{{ c.total_estudiantes }}</span></td>
+            <td><code style="font-size:.78rem;background:var(--surface);padding:2px 8px;border-radius:6px">{{ c.codigo }}</code></td>
+            <td><span class="chip {% if c.activo %}chip-success{% else %}chip-dark{% endif %}">{% if c.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
+            <td>
+              <div style="display:flex;gap:.35rem">
+                <a href="{% url 'courses:detalle' c.pk %}" class="btn btn-ghost btn-xs"><i class="bi bi-eye-fill"></i></a>
+                <a href="{% url 'gestion:editar_curso' c.pk %}" class="btn btn-ghost btn-xs"><i class="bi bi-pencil-fill"></i></a>
+                {% if user.es_profesor %}<form method="post" action="{% url 'gestion:eliminar_curso' c.pk %}" style="display:inline" onsubmit="return confirm('&iquest;Desactivar?')">{% csrf_token %}<button type="submit" class="btn btn-danger btn-xs"><i class="bi bi-trash-fill"></i></button></form>{% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--muted)">Sin cursos</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

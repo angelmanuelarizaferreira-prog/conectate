@@ -1,0 +1,245 @@
+{% extends 'base/base.html' %}
+{% load emotion_tags %}
+{% block title %}Notas — {{ estudiante.get_full_name }}{% endblock %}
+{% block page_title %}Notas sobre {{ estudiante.get_full_name }}{% endblock %}
+{% block page_subtitle %}Registro privado del profesor — solo visible para ti{% endblock %}
+
+{% block extra_css %}
+<style>
+.nota-timeline{display:flex;flex-direction:column;gap:0}
+.nota-day-group{position:relative;padding-left:2.5rem;margin-bottom:1.5rem}
+.nota-day-group::before{
+  content:'';position:absolute;left:.85rem;top:2rem;bottom:0;
+  width:2px;background:var(--border);
+}
+.nota-day-dot{
+  position:absolute;left:0;top:.85rem;
+  width:1.7rem;height:1.7rem;border-radius:50%;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 3px var(--card),0 0 0 5px rgba(124,110,255,.15);
+}
+.nota-day-label{
+  font-weight:800;font-size:.78rem;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.8px;
+  margin-bottom:.65rem;padding-top:.6rem;
+}
+.nota-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:12px;padding:1rem 1.1rem;margin-bottom:.55rem;
+  position:relative;transition:border-color .15s;
+}
+.nota-card:hover{border-color:rgba(124,110,255,.3)}
+.nota-card-hd{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;flex-wrap:wrap}
+.nota-tipo-badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.18rem .6rem;border-radius:50px;
+  font-size:.67rem;font-weight:700;
+}
+.nota-body{font-size:.88rem;color:var(--ink);line-height:1.7;white-space:pre-wrap}
+.nota-del-btn{
+  position:absolute;top:.7rem;right:.7rem;
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:.8rem;padding:.25rem .4rem;border-radius:6px;
+  transition:all .15s;
+}
+.nota-del-btn:hover{background:rgba(224,40,79,.1);color:#e0284f}
+
+/* New note form */
+.nota-form{
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);
+  padding:1.4rem;
+}
+.tipo-picker{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.85rem}
+.tipo-opt{
+  padding:.35rem .85rem;border-radius:50px;
+  border:1.5px solid var(--border);background:var(--card);
+  font-size:.75rem;font-weight:700;cursor:pointer;
+  transition:all .15s;color:var(--ink);
+}
+.tipo-opt:hover,.tipo-opt.sel{color:#fff;border-color:transparent}
+.tipo-opt[data-tipo="observacion"].sel{background:var(--accent)}
+.tipo-opt[data-tipo="alerta"].sel{background:#e0284f}
+.tipo-opt[data-tipo="logro"].sel{background:#00b87a}
+.tipo-opt[data-tipo="seguimiento"].sel{background:#f5b800;color:#111}
+
+/* Student context strip */
+.ctx-strip{
+  display:flex;gap:.85rem;align-items:stretch;flex-wrap:wrap;
+}
+.ctx-card{
+  flex:1;min-width:140px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;
+  padding:.85rem 1rem;
+}
+.ctx-reg-row{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.3rem 0;border-bottom:1px solid rgba(124,110,255,.07);
+}
+.ctx-reg-row:last-child{border-bottom:none}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Student header -->
+  <div class="card fade-up" style="padding:1.25rem 1.5rem;background:var(--grd2);border:none">
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--grd);
+                  display:flex;align-items:center;justify-content:center;
+                  font-weight:800;font-size:1.15rem;color:#fff;flex-shrink:0">
+        {{ estudiante.first_name|first|upper }}{{ estudiante.last_name|first|upper }}
+      </div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;color:#fff">
+          {{ estudiante.get_full_name }}
+        </div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.45)">
+          {{ estudiante.email }} &bull; {{ notas_por_fecha|length }} día(s) con notas
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:.5rem">
+        <a href="{% url 'emotions:resumen_grupo' %}" class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.6)">
+          <i class="bi bi-arrow-left"></i> Volver
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:1.25rem;align-items:start" class="fade-up fade-up-1">
+
+    <!-- Left: timeline + new note form -->
+    <div style="display:flex;flex-direction:column;gap:1.1rem">
+
+      <!-- Nueva nota -->
+      <div class="nota-form">
+        <div style="font-weight:700;font-size:.88rem;margin-bottom:1rem;color:var(--ink)">
+          <i class="bi bi-plus-circle-fill" style="color:var(--accent)"></i> Agregar nota
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <!-- Tipo -->
+          <div style="margin-bottom:.65rem;font-size:.75rem;font-weight:700;color:var(--muted)">Tipo de nota</div>
+          <div class="tipo-picker" id="tipoPicker">
+            {% for val,label in tipos %}
+            <div class="tipo-opt {% if forloop.first %}sel{% endif %}" data-tipo="{{ val }}" onclick="selectTipo('{{ val }}',this)">
+              {% if val == 'observacion' %}<i class="bi bi-journal-text"></i>
+              {% elif val == 'alerta' %}<i class="bi bi-exclamation-triangle-fill"></i>
+              {% elif val == 'logro' %}<i class="bi bi-trophy-fill"></i>
+              {% elif val == 'seguimiento' %}<i class="bi bi-eye-fill"></i>
+              {% endif %}
+              {{ label }}
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="tipo" id="tipoInput" value="observacion">
+
+          <!-- Fecha -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.75rem">
+            <div>
+              <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:.35rem">Fecha</div>
+              <input type="date" name="fecha" class="field-input" value="{{ hoy|date:'Y-m-d' }}" max="{{ hoy|date:'Y-m-d' }}">
+            </div>
+          </div>
+
+          <!-- Contenido -->
+          <textarea name="contenido" class="field-textarea" rows="4"
+            placeholder="Escribe tu observación sobre {{ estudiante.first_name }}..."
+            maxlength="2000" required></textarea>
+          <button type="submit" class="btn btn-primary" style="margin-top:.75rem;width:100%;justify-content:center">
+            <i class="bi bi-floppy-fill"></i> Guardar nota
+          </button>
+        </form>
+      </div>
+
+      <!-- Timeline de notas -->
+      {% if notas_por_fecha %}
+      <div>
+        <div style="font-weight:700;font-size:.85rem;color:var(--ink);margin-bottom:.85rem">
+          <i class="bi bi-clock-history"></i> Historial de notas
+        </div>
+        <div class="nota-timeline">
+          {% for grupo in notas_por_fecha %}
+          <div class="nota-day-group">
+            <div class="nota-day-dot">
+              <i class="bi bi-calendar3" style="font-size:.65rem;color:#fff"></i>
+            </div>
+            <div class="nota-day-label">{{ grupo.fecha|date:"l, d \d\e F \d\e Y" }}</div>
+            {% for nota in grupo.notas %}
+            <div class="nota-card">
+              <button class="nota-del-btn" title="Eliminar nota"
+                onclick="if(confirm('¿Eliminar esta nota?')){
+                  var f=document.createElement('form');f.method='post';
+                  f.action='{% url 'emotions:nota_eliminar' 0 %}'.replace('/0/','/'+{{ nota.pk }}+'/');
+                  var t=document.createElement('input');t.type='hidden';t.name='csrfmiddlewaretoken';t.value='{{ csrf_token }}';
+                  f.appendChild(t);document.body.appendChild(f);f.submit();}">
+                <i class="bi bi-trash"></i>
+              </button>
+              <div class="nota-card-hd">
+                <span class="nota-tipo-badge"
+                  style="background:{% if nota.tipo == 'alerta' %}rgba(224,40,79,.1);color:#e0284f
+                         {% elif nota.tipo == 'logro' %}rgba(0,184,122,.1);color:#00b87a
+                         {% elif nota.tipo == 'seguimiento' %}rgba(245,184,0,.1);color:#c89800
+                         {% else %}rgba(124,110,255,.1);color:var(--accent){% endif %}">
+                  <i class="bi {{ nota.get_tipo_icon }}"></i>
+                  {{ nota.get_tipo_display }}
+                </span>
+                <span style="font-size:.7rem;color:var(--muted)">
+                  {{ nota.created_at|date:"H:i" }} &bull; {{ nota.profesor.get_full_name }}
+                </span>
+              </div>
+              <div class="nota-body">{{ nota.contenido }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="empty">
+        <span class="empty-ico"><i class="bi bi-journal-text"></i></span>
+        <div class="empty-title">Sin notas aún</div>
+        <div class="empty-sub">Agrega la primera nota sobre {{ estudiante.first_name }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: student context -->
+    <div style="display:flex;flex-direction:column;gap:.85rem;position:sticky;top:5rem">
+      <div class="card" style="padding:1.1rem">
+        <div style="font-weight:700;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.85rem">
+          <i class="bi bi-calendar3"></i> Últimos 14 días
+        </div>
+        {% if registros %}
+        <div>
+          {% for reg in registros %}
+          <div class="ctx-reg-row">
+            <i class="bi {{ reg.get_emoji }}" style="color:{% if reg.emocion == 'feliz' %}#28a745{% elif reg.emocion == 'tranquilo' %}#17a2b8{% elif reg.emocion == 'estresado' %}#fd7e14{% elif reg.emocion == 'triste' %}#6c757d{% else %}#dc3545{% endif %};font-size:.9rem;flex-shrink:0"></i>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.75rem;font-weight:600;color:var(--ink)">{{ reg.get_emocion_display }}</div>
+              <div style="font-size:.65rem;color:var(--muted)">{{ reg.fecha|date:"d/m" }}</div>
+            </div>
+            <div style="font-size:.8rem;font-weight:800;color:var(--accent)">{{ reg.puntaje }}/5</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div style="font-size:.82rem;color:var(--muted);text-align:center;padding:.5rem">Sin registros recientes</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectTipo(val, el){
+  document.querySelectorAll('.tipo-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('tipoInput').value = val;
+}
+</script>
+{% endblock %}

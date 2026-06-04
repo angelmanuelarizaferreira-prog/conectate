@@ -1,0 +1,244 @@
+{% extends 'base/base.html' %}
+{% block title %}Mi Panel de Padre{% endblock %}
+{% block page_title %}Panel de Seguimiento{% endblock %}
+{% block page_subtitle %}El bienestar emocional de tu(s) hijo(s) de un vistazo{% endblock %}
+
+{% block extra_css %}
+<style>
+.hijo-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  transition:box-shadow .18s,border-color .18s;
+}
+.hijo-card:hover{box-shadow:var(--shadow);border-color:rgba(124,110,255,.25)}
+.hijo-hero{
+  background:var(--grd2);padding:1.4rem 1.5rem;
+  display:flex;align-items:center;gap:1rem;
+}
+.hijo-ava{
+  width:52px;height:52px;border-radius:14px;
+  background:var(--grd);color:#fff;font-weight:800;
+  font-family:'Syne',sans-serif;font-size:1.2rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.hijo-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
+.hoy-badge{
+  display:flex;align-items:center;gap:.85rem;
+  background:rgba(124,110,255,.06);border:1px solid rgba(124,110,255,.14);
+  border-radius:12px;padding:.85rem 1rem;
+}
+.week-mini{display:flex;gap:.45rem;align-items:flex-end}
+.wm-bar{flex:1;border-radius:4px 4px 0 0;min-height:4px;transition:height .4s ease}
+.wm-lbl{font-size:.58rem;color:var(--muted);font-weight:600;text-align:center;margin-top:2px}
+.alerta-dot{width:10px;height:10px;border-radius:50%;background:#e0284f;display:inline-block;box-shadow:0 0 0 3px rgba(224,40,79,.15)}
+.sem-bar{height:8px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:.3rem}
+.sem-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.quick-action{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:1.1rem 1.25rem;
+  display:flex;align-items:center;gap:.85rem;
+  text-decoration:none;color:var(--ink);
+  transition:transform .15s,box-shadow .15s,border-color .15s;
+}
+.quick-action:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:rgba(124,110,255,.3);color:var(--ink)}
+.quick-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
+.cita-mini{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.65rem 1rem;border-bottom:1px solid var(--border);
+  font-size:.82rem;
+}
+.cita-mini:last-child{border-bottom:none}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <!-- Welcome hero -->
+  <div class="card fade-up" style="background:var(--grd2);border:none;padding:1.5rem 2rem;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:#7c6eff;filter:blur(70px);opacity:.2"></div>
+    <div style="position:absolute;bottom:-40px;left:60px;width:130px;height:130px;border-radius:50%;background:#ff6b9d;filter:blur(60px);opacity:.15"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.3rem;color:#fff;letter-spacing:-.3px;margin-bottom:.35rem">
+          Hola, {{ request.user.first_name }} 👋
+        </div>
+        <div style="font-size:.88rem;color:rgba(255,255,255,.5)">
+          Tienes {{ hijos_data|length }} hijo{% if hijos_data|length != 1 %}s{% endif %} vinculado{% if hijos_data|length != 1 %}s{% endif %}.
+          Aquí puedes ver su estado emocional en tiempo real.
+        </div>
+      </div>
+      {% if mensajes_no_leidos > 0 %}
+      <a href="{% url 'accounts:padre_mensajes' %}" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:.6rem 1.1rem;color:#fff;text-decoration:none;font-size:.82rem;font-weight:700">
+        <i class="bi bi-chat-dots-fill"></i> {{ mensajes_no_leidos }} mensaje{% if mensajes_no_leidos != 1 %}s{% endif %} nuevo{% if mensajes_no_leidos != 1 %}s{% endif %}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Accesos rápidos -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.85rem" class="fade-up fade-up-1">
+    <a href="{% url 'accounts:padre_citaciones' %}" class="quick-action">
+      <div class="quick-ico" style="background:rgba(245,184,0,.12)">
+        <i class="bi bi-calendar-event-fill" style="color:#f5b800"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.85rem">Citaciones</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:1px">
+          {% if citaciones_proximas %}{{ citaciones_proximas|length }} próxima{% if citaciones_proximas|length != 1 %}s{% endif %}{% else %}Sin citaciones pendientes{% endif %}
+        </div>
+      </div>
+    </a>
+    <a href="{% url 'accounts:padre_mensajes' %}" class="quick-action">
+      <div class="quick-ico" style="background:rgba(124,110,255,.12)">
+        <i class="bi bi-chat-dots-fill" style="color:var(--accent)"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.85rem">Mensajes</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:1px">
+          {% if mensajes_no_leidos > 0 %}<span style="color:var(--accent);font-weight:700">{{ mensajes_no_leidos }} sin leer</span>{% else %}Escribe al profesor{% endif %}
+        </div>
+      </div>
+    </a>
+    <a href="{% url 'accounts:vincular_hijo' %}" class="quick-action">
+      <div class="quick-ico" style="background:rgba(0,212,170,.12)">
+        <i class="bi bi-diagram-3-fill" style="color:#00d4aa"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.85rem">Mis vínculos</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:1px">{{ hijos_data|length }} estudiante{% if hijos_data|length != 1 %}s{% endif %} vinculado{% if hijos_data|length != 1 %}s{% endif %}</div>
+      </div>
+    </a>
+  </div>
+
+  {% if tiene_hijos %}
+
+  <!-- Citaciones próximas (si las hay) -->
+  {% if citaciones_proximas %}
+  <div class="card fade-up fade-up-2" style="overflow:hidden">
+    <div class="card-hd">
+      <span class="card-hd-title"><i class="bi bi-calendar-event-fill" style="color:#f5b800"></i> Citaciones próximas</span>
+      <a href="{% url 'accounts:padre_citaciones' %}" class="btn btn-ghost btn-sm">Ver todas</a>
+    </div>
+    {% for cita in citaciones_proximas %}
+    <div class="cita-mini">
+      <div style="min-width:48px;text-align:center;background:rgba(124,110,255,.08);border-radius:8px;padding:.4rem .3rem;flex-shrink:0">
+        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:900;color:var(--accent);line-height:1">{{ cita.fecha|date:"d" }}</div>
+        <div style="font-size:.58rem;color:var(--muted);font-weight:700;text-transform:uppercase">{{ cita.fecha|date:"M" }}</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:var(--ink)">{{ cita.estudiante.get_full_name }}</div>
+        <div style="font-size:.73rem;color:var(--muted)">{{ cita.hora|time:"H:i" }} &bull; {{ cita.get_lugar_display_full }} &bull; Prof. {{ cita.profesor.get_full_name }}</div>
+      </div>
+      {% if cita.es_urgente %}
+      <span style="font-size:.68rem;background:rgba(224,40,79,.12);color:#e0284f;font-weight:700;padding:.2rem .55rem;border-radius:50px;flex-shrink:0">Urgente</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Tarjetas de hijos -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem" class="fade-up fade-up-3">
+    {% for d in hijos_data %}
+    <div class="hijo-card">
+      <!-- Header -->
+      <div class="hijo-hero">
+        <div class="hijo-ava">{{ d.estudiante.first_name|first|upper }}{{ d.estudiante.last_name|first|upper }}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Syne',sans-serif;font-size:1rem;color:#fff;letter-spacing:-.2px">
+            {{ d.estudiante.get_full_name }}
+          </div>
+          <div style="font-size:.73rem;color:rgba(255,255,255,.4);margin-top:1px">
+            {{ d.vinculo.get_relacion_display }}
+            {% if d.alertas > 0 %}
+            &nbsp;<span class="alerta-dot"></span>&nbsp;
+            <span style="color:#ff8fb8;font-weight:700">{{ d.alertas }} alerta{{ d.alertas|pluralize }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <a href="{% url 'accounts:hijo_detalle' d.estudiante.pk %}" class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15)">
+          Ver detalle
+        </a>
+      </div>
+
+      <div class="hijo-body">
+        <!-- Estado de hoy -->
+        <div class="hoy-badge">
+          {% if d.reg_hoy %}
+          <i class="bi {{ d.reg_hoy.get_emoji }}" style="font-size:1.8rem;color:{% if d.reg_hoy.emocion == 'feliz' %}#28a745{% elif d.reg_hoy.emocion == 'tranquilo' %}#17a2b8{% elif d.reg_hoy.emocion == 'estresado' %}#fd7e14{% elif d.reg_hoy.emocion == 'triste' %}#6c757d{% else %}#dc3545{% endif %}"></i>
+          <div>
+            <div style="font-weight:700;font-size:.88rem;color:var(--ink)">Hoy: {{ d.reg_hoy.get_emocion_display }}</div>
+            <div style="font-size:.72rem;color:var(--muted)">Puntaje {{ d.reg_hoy.puntaje }}/5 &bull; {{ hoy|date:"d/m/Y" }}</div>
+          </div>
+          {% else %}
+          <i class="bi bi-question-circle-fill" style="font-size:1.8rem;color:var(--muted)"></i>
+          <div>
+            <div style="font-weight:700;font-size:.88rem;color:var(--muted)">Sin registro hoy</div>
+            <div style="font-size:.72rem;color:var(--muted)">{{ hoy|date:"d/m/Y" }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Promedio 7 días -->
+        {% if d.prom_7d %}
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
+            <span style="font-size:.75rem;font-weight:700;color:var(--muted)">
+              <i class="bi bi-bar-chart-fill"></i> Promedio 7 días
+            </span>
+            <span style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;
+              color:{% if d.prom_7d >= 3.5 %}#00b87a{% elif d.prom_7d >= 2.5 %}#f5b800{% else %}#e0284f{% endif %}">
+              {{ d.prom_7d }}/5
+            </span>
+          </div>
+          <div class="sem-bar">
+            <div class="sem-fill" style="width:{{ d.prom_7d|floatformat:0 }}0%;background:{% if d.prom_7d >= 3.5 %}linear-gradient(90deg,#00d4aa,#00b87a){% elif d.prom_7d >= 2.5 %}linear-gradient(90deg,#ffb340,#f5b800){% else %}linear-gradient(90deg,#ff6b9d,#e0284f){% endif %}"></div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Mini gráfica semana -->
+        {% if d.regs_7d %}
+        <div>
+          <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:.5rem">
+            <i class="bi bi-calendar3"></i> Últimos 7 días
+          </div>
+          <div class="week-mini">
+            {% for reg in d.regs_7d %}
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div class="wm-bar" style="height:{{ reg.puntaje|floatformat:0 }}0px;background:{% if reg.puntaje >= 4 %}linear-gradient(180deg,#00d4aa,#00b87a){% elif reg.puntaje == 3 %}linear-gradient(180deg,#ffb340,#f5b800){% else %}linear-gradient(180deg,#ff6b9d,#e0284f){% endif %}"></div>
+              <div class="wm-lbl">{{ reg.fecha|date:"d/m" }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Acciones rápidas -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.25rem">
+          <a href="{% url 'accounts:hijo_detalle' d.estudiante.pk %}" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">
+            <i class="bi bi-graph-up"></i> Historial completo
+          </a>
+          <a href="{% url 'accounts:padre_mensajes' %}" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">
+            <i class="bi bi-chat-dots-fill"></i> Mensaje al prof.
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty fade-up">
+    <span class="empty-ico"><i class="bi bi-people-fill"></i></span>
+    <div class="empty-title">Aún no tienes hijos vinculados</div>
+    <div class="empty-sub">
+      Pide al profesor de tu hijo que realice la vinculación, o hazlo tú mismo desde<br>
+      <a href="{% url 'accounts:vincular_hijo' %}" style="color:var(--accent);font-weight:700">Mis vínculos</a>.
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

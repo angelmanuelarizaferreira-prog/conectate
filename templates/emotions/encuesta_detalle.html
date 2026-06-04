@@ -1,0 +1,111 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ encuesta.titulo }}{% endblock %}
+{% block page_title %}{{ encuesta.titulo }}{% endblock %}
+{% block page_subtitle %}Encuesta de bienestar{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+  <div class="card fade-up" style="padding:1.75rem">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+      <div style="font-size:2.5rem">{% if encuesta.tipo == 'escala' %}<i class="bi bi-sliders"></i>{% elif encuesta.tipo == 'opciones' %}<i class="bi bi-check2-square" style="color:#28a745"></i>{% else %}<i class="bi bi-chat-dots-fill"></i>{% endif %}</div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;color:var(--ink);letter-spacing:-.3px">{{ encuesta.titulo }}</div>
+        <div style="font-size:.78rem;color:var(--muted)">
+          {% if encuesta.tipo == 'escala' %}Escala 1-5{% elif encuesta.tipo == 'opciones' %}Opci&oacute;n m&uacute;ltiple{% else %}Respuesta libre{% endif %}
+          {% if encuesta.anonima %} &bull; <i class="bi bi-incognito"></i> An&oacute;nima{% endif %}
+          {% if encuesta.fecha_limite %} &bull; Limite: {{ encuesta.fecha_limite|date:"d/m/Y" }}{% endif %}
+        </div>
+      </div>
+    </div>
+    {% if encuesta.descripcion %}<div style="background:var(--surface);border-radius:var(--r2);padding:1rem;font-size:.88rem;line-height:1.65;margin-bottom:1rem">{{ encuesta.descripcion }}</div>{% endif %}
+
+    {% if user.es_estudiante %}
+      {% if ya_respondio %}
+      <div style="text-align:center;padding:2rem">
+        <div style="font-size:3rem;margin-bottom:.75rem"><i class="bi bi-check-lg"></i></div>
+        <div style="font-weight:700;font-size:1rem">Ya respondiste esta encuesta</div>
+        <div style="font-size:.85rem;color:var(--muted);margin-top:.35rem">Gracias por participar.</div>
+      </div>
+      {% else %}
+      <form method="post">
+        {% csrf_token %}
+        {% if encuesta.tipo == 'escala' %}
+        <div style="margin-bottom:1.25rem">
+          <div style="font-weight:600;margin-bottom:.85rem;font-size:.88rem">Selecciona tu respuesta (1 = muy mal, 5 = muy bien)</div>
+          <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+            <span style="font-size:.82rem;color:var(--muted)">Muy mal</span>
+            {% for i in "12345" %}
+            <label style="cursor:pointer;text-align:center">
+              <input type="radio" name="valor_escala" value="{{ forloop.counter }}" required style="accent-color:var(--accent)">
+              <div style="font-weight:700;font-size:1rem;margin-top:.25rem">{{ forloop.counter }}</div>
+            </label>
+            {% endfor %}
+            <span style="font-size:.82rem;color:var(--muted)">Muy bien</span>
+          </div>
+        </div>
+        {% elif encuesta.tipo == 'opciones' %}
+        <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.25rem">
+          {% for op in encuesta.opciones %}
+          <label style="display:flex;align-items:center;gap:.75rem;padding:.85rem;background:var(--surface);border-radius:var(--r2);cursor:pointer">
+            <input type="radio" name="valor_opcion" value="{{ op }}" required style="accent-color:var(--accent)">
+            <span style="font-size:.88rem;font-weight:500">{{ op }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div style="margin-bottom:1.25rem">
+          <textarea name="valor_texto" class="field-input" style="resize:vertical;min-height:110px;border-radius:var(--r2);width:100%" rows="4" placeholder="Escribe tu respuesta..." required></textarea>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.85rem">Enviar respuesta</button>
+      </form>
+      {% endif %}
+
+    {% else %}
+    <!-- Resultados para profesor/admin -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem">
+      <div style="background:var(--surface);border-radius:var(--r2);padding:1rem;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:1.8rem;color:var(--accent)">{{ total }}</div>
+        <div style="font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Respuestas</div>
+      </div>
+      {% if stats.promedio %}
+      <div style="background:var(--surface);border-radius:var(--r2);padding:1rem;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:1.8rem;color:#00b87a">{{ stats.promedio }}</div>
+        <div style="font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Promedio</div>
+      </div>
+      {% endif %}
+    </div>
+    {% if stats.distribucion %}
+    <div style="margin-bottom:1.25rem"><canvas id="gEncuesta" height="120"></canvas></div>
+    {% endif %}
+    {% if not encuesta.anonima %}
+    <div style="border-top:1px solid var(--border);padding-top:1rem">
+      <div style="font-weight:700;font-size:.85rem;margin-bottom:.85rem">Respuestas individuales</div>
+      {% for r in respuestas %}
+      <div style="padding:.75rem;background:var(--surface);border-radius:var(--r2);margin-bottom:.5rem">
+        <div style="font-weight:600;font-size:.82rem;margin-bottom:.25rem">{{ r.estudiante.get_full_name }}</div>
+        <div style="font-size:.85rem;color:var(--ink)">
+          {% if r.valor_escala %}{{ r.valor_escala }}/5{% elif r.valor_opcion %}{{ r.valor_opcion }}{% else %}{{ r.valor_texto }}{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% if not user.es_estudiante and stats.distribucion %}
+<script>
+const stats = {{ stats_json|safe }};
+const dist = stats.distribucion || {};
+const labels = Object.keys(dist);
+const vals = Object.values(dist);
+new Chart(document.getElementById('gEncuesta').getContext('2d'),{
+  type:'bar',
+  data:{labels:labels,datasets:[{data:vals,backgroundColor:'rgba(124,110,255,.7)',borderRadius:8}]},
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}}
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base/base.html' %}
+{% block title %}Nueva Actividad{% endblock %}
+{% block page_title %}Nueva Actividad{% endblock %}
+{% block page_subtitle %}Crea una actividad para tus estudiantes{% endblock %}
+{% block content %}
+<div style="max-width:580px;margin:0 auto">
+  <div class="card fade-up" style="padding:2rem">
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div><label class="field-label">T&iacute;tulo *</label><input type="text" name="titulo" class="field-input" placeholder="Ej: Ejercicio de respiracion profunda" required></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+          <div><label class="field-label">Tipo *</label><select name="tipo" class="field-input field-select">{% for v,l in tipos %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+          <div><label class="field-label">Curso</label><select name="curso" class="field-input field-select"><option value="">— Sin curso —</option>{% for c in cursos %}<option value="{{ c.pk }}" {% if request.GET.curso == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}</select></div>
+          <div><label class="field-label">Semana del curso *</label><select name="semana" class="field-input field-select">{% for s in semana_range %}<option value="{{ s }}" {% if request.GET.semana == s|stringformat:"s" %}selected{% endif %}>Semana {{ s }}</option>{% endfor %}</select></div>
+        </div>
+        <div><label class="field-label">Descripci&oacute;n / Instrucciones *</label><textarea name="descripcion" class="field-input" style="resize:vertical;min-height:120px;border-radius:var(--r2);width:100%" rows="4" placeholder="Describe la actividad..." required></textarea></div>
+        <div><label class="field-label">Fecha l&iacute;mite <span style="color:var(--muted);font-weight:400">(opcional)</span></label><input type="date" name="fecha_limite" class="field-input"></div>
+        <div style="display:flex;gap:.75rem;margin-top:.5rem">
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center"><i class="bi bi-lightning-fill"></i> Crear actividad</button>
+          <a href="{% url 'activities:lista' %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

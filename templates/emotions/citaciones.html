@@ -1,0 +1,413 @@
+{% extends 'base/base.html' %}
+{% block title %}Citaciones{% endblock %}
+{% block page_title %}{% if es_estudiante %}Mis Citaciones{% else %}Gestión de Citaciones{% endif %}{% endblock %}
+{% block page_subtitle %}{% if es_estudiante %}Convocatorias oficiales de tus profesores{% else %}Envía y gestiona citaciones a estudiantes{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Reporte oficial ── */
+.cita-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:16px;overflow:hidden;
+  transition:box-shadow .18s,border-color .18s;
+  position:relative;
+}
+.cita-card:hover{box-shadow:var(--shadow);border-color:rgba(124,110,255,.25)}
+.cita-card.urgente{border-color:#e0284f;border-width:2px}
+.cita-card.urgente::before{
+  content:'URGENTE';
+  position:absolute;top:0;right:0;
+  background:#e0284f;color:#fff;
+  font-size:.6rem;font-weight:900;letter-spacing:1.5px;
+  padding:.2rem .65rem;border-radius:0 14px 0 8px;
+}
+
+/* ── Reporte header ── */
+.rpt-hdr{
+  background:linear-gradient(135deg,#1a1440 0%,#2d1f6e 100%);
+  padding:1.1rem 1.4rem;
+  display:flex;align-items:flex-start;gap:1rem;
+  border-bottom:3px solid rgba(124,110,255,.4);
+  position:relative;overflow:hidden;
+}
+.rpt-hdr::before{
+  content:'';position:absolute;
+  right:-20px;top:-20px;width:100px;height:100px;
+  border-radius:50%;background:rgba(124,110,255,.08);
+}
+.rpt-sello{
+  width:42px;height:42px;border-radius:10px;flex-shrink:0;
+  background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;color:#c4bfff;
+}
+.rpt-inst{font-size:.6rem;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase}
+.rpt-titulo{font-size:.95rem;font-weight:800;color:#fff;line-height:1.25;margin:.2rem 0}
+.rpt-num{font-size:.62rem;color:rgba(255,255,255,.35);font-family:monospace}
+
+/* ── Body ── */
+.rpt-body{padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:.85rem}
+
+/* ── Fecha/hora badge ── */
+.fecha-badge{
+  background:rgba(124,110,255,.08);border:1.5px solid rgba(124,110,255,.18);
+  border-radius:12px;padding:.75rem 1rem;
+  display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
+}
+.fecha-big{
+  font-family:'Syne',sans-serif;font-size:1.35rem;
+  font-weight:800;color:var(--ink);line-height:1;
+}
+.hora-big{
+  font-family:'Syne',sans-serif;font-size:1.35rem;
+  font-weight:800;color:var(--accent);line-height:1;
+}
+.fecha-sub{font-size:.68rem;color:var(--muted);font-weight:600;margin-top:.2rem}
+
+/* ── Info rows ── */
+.info-row{display:flex;align-items:flex-start;gap:.65rem;font-size:.85rem}
+.info-ico{
+  width:28px;height:28px;border-radius:8px;
+  background:rgba(124,110,255,.08);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;flex-shrink:0;margin-top:.05rem;
+}
+.info-lbl{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.info-val{font-size:.88rem;color:var(--ink);font-weight:600;line-height:1.5}
+
+/* ── Estado chip ── */
+.estado-chip{
+  display:inline-flex;align-items:center;gap:.35rem;
+  padding:.28rem .75rem;border-radius:50px;
+  font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+}
+.estado-pendiente{background:rgba(245,184,0,.12);color:#c89800}
+.estado-confirmada{background:rgba(0,184,122,.12);color:#00b87a}
+.estado-cancelada{background:rgba(224,40,79,.12);color:#e0284f;text-decoration:line-through}
+.estado-completada{background:rgba(124,110,255,.12);color:var(--accent)}
+
+/* ── Footer actions ── */
+.rpt-foot{
+  padding:.75rem 1.4rem;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:.5rem;background:rgba(124,110,255,.02);
+}
+
+/* ── New citacion form ── */
+.cita-form{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:1.5rem;
+}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+@media(max-width:560px){.form-row{grid-template-columns:1fr}}
+.field-label{font-size:.73rem;font-weight:700;color:var(--muted);
+             text-transform:uppercase;letter-spacing:.6px;margin-bottom:.35rem}
+
+/* ── Toggle urgente ── */
+.urgente-toggle{
+  display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;
+  background:rgba(224,40,79,.05);border:1.5px solid rgba(224,40,79,.15);
+  border-radius:10px;cursor:pointer;transition:all .15s;
+}
+.urgente-toggle:hover{background:rgba(224,40,79,.08)}
+.urgente-toggle.on{background:rgba(224,40,79,.1);border-color:rgba(224,40,79,.35)}
+.urgente-toggle .toggle-dot{
+  width:38px;height:22px;border-radius:11px;background:var(--border);
+  position:relative;transition:background .2s;flex-shrink:0;
+}
+.urgente-toggle.on .toggle-dot{background:#e0284f}
+.urgente-toggle .toggle-dot::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:16px;height:16px;border-radius:50%;background:#fff;
+  transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2);
+}
+.urgente-toggle.on .toggle-dot::after{left:19px}
+
+/* ── Tabs ── */
+.citaciones-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:1.5rem}
+.ctab{
+  padding:.65rem 1.25rem;font-size:.82rem;font-weight:700;
+  color:var(--muted);border:none;background:none;cursor:pointer;
+  border-bottom:2.5px solid transparent;margin-bottom:-2px;
+  transition:all .15s;display:flex;align-items:center;gap:.4rem;
+}
+.ctab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.ctab:hover:not(.active){color:var(--ink)}
+
+/* ── Empty ── */
+.cita-empty{
+  text-align:center;padding:3rem 1rem;color:var(--muted);
+}
+.cita-empty-ico{font-size:3rem;margin-bottom:.75rem;opacity:.3}
+
+/* ── Dark mode ── */
+body.dark .rpt-hdr{background:linear-gradient(135deg,#0d0a20 0%,#1a1040 100%)}
+body.dark .fecha-badge{background:rgba(157,143,255,.06);border-color:rgba(157,143,255,.15)}
+body.dark .info-ico{background:rgba(157,143,255,.08)}
+body.dark .rpt-foot{background:rgba(157,143,255,.02)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem">
+
+{% if not es_estudiante %}
+<!-- ══════════════════ VISTA PROFESOR ══════════════════ -->
+
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:1.5rem;align-items:start">
+
+    <!-- Left: lista de citaciones -->
+    <div>
+      <div class="citaciones-tabs">
+        <button class="ctab active" id="tabProx" onclick="showCitTab('prox',this)">
+          <i class="bi bi-calendar-check-fill"></i> Próximas ({{ proximas|length }})
+        </button>
+        <button class="ctab" id="tabPas" onclick="showCitTab('pas',this)">
+          <i class="bi bi-clock-history"></i> Pasadas ({{ pasadas|length }})
+        </button>
+      </div>
+
+      <!-- Próximas -->
+      <div id="panelProx">
+        {% if proximas %}
+          <div style="display:flex;flex-direction:column;gap:1rem">
+          {% for cita in proximas %}
+          {% include 'emotions/_cita_card.html' with cita=cita show_prof=False %}
+          {% endfor %}
+          </div>
+        {% else %}
+          <div class="cita-empty">
+            <div class="cita-empty-ico"><i class="bi bi-calendar3"></i></div>
+            <div style="font-weight:700;margin-bottom:.35rem">Sin citaciones próximas</div>
+            <div style="font-size:.85rem">Crea una nueva citación desde el formulario</div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Pasadas -->
+      <div id="panelPas" style="display:none">
+        {% if pasadas %}
+          <div style="display:flex;flex-direction:column;gap:1rem">
+          {% for cita in pasadas %}
+          {% include 'emotions/_cita_card.html' with cita=cita show_prof=False %}
+          {% endfor %}
+          </div>
+        {% else %}
+          <div class="cita-empty">
+            <div class="cita-empty-ico"><i class="bi bi-clock-history"></i></div>
+            <div style="font-weight:700">Sin historial de citaciones</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: nueva citacion form -->
+    <div style="position:sticky;top:5rem">
+      <div class="cita-form fade-up">
+        <div style="font-weight:800;font-size:.95rem;margin-bottom:1.25rem;color:var(--ink);
+                    display:flex;align-items:center;gap:.5rem">
+          <i class="bi bi-send-fill" style="color:var(--accent)"></i> Nueva citación
+        </div>
+
+        <form method="post" action="{% url 'emotions:citacion_crear' %}">
+          {% csrf_token %}
+
+          <!-- Estudiante con buscador -->
+          <div style="margin-bottom:.85rem">
+            <div class="field-label">Estudiante</div>
+            <div style="position:relative">
+              <input type="text" id="estBuscador" class="field-input" autocomplete="off"
+                     placeholder="Buscar estudiante por nombre..."
+                     oninput="filtrarEstudiantes(this.value)"
+                     onfocus="mostrarDropdown()"
+                     style="padding-right:2rem">
+              <i class="bi bi-search" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:.85rem"></i>
+              <input type="hidden" name="estudiante" id="estSelId" required>
+              <div id="estDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:999;
+                   background:var(--card);border:1.5px solid var(--border);border-radius:12px;
+                   box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;margin-top:4px">
+                {% for est in estudiantes_disp %}
+                <div class="est-opt" data-id="{{ est.pk }}" data-name="{{ est.get_full_name }}"
+                     onclick="seleccionarEst(this)"
+                     style="padding:.6rem 1rem;cursor:pointer;font-size:.85rem;font-weight:600;transition:background .1s">
+                  {{ est.get_full_name }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Fecha y hora -->
+          <div class="form-row" style="margin-bottom:.85rem">
+            <div>
+              <div class="field-label">Fecha de la cita</div>
+              <input type="date" name="fecha" class="field-input" required
+                     min="{{ hoy|date:'Y-m-d' }}">
+            </div>
+            <div>
+              <div class="field-label">Hora</div>
+              <input type="time" name="hora" class="field-input" required value="08:00">
+            </div>
+          </div>
+
+          <!-- Lugar -->
+          <div style="margin-bottom:.85rem">
+            <div class="field-label">Lugar de encuentro</div>
+            <select name="lugar" class="field-input field-select" id="lugarSel" onchange="toggleLugarOtro()">
+              {% for val,label in lugares %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+            <input type="text" name="lugar_otro" id="lugarOtroInp" class="field-input"
+                   placeholder="Especifica el lugar..." style="margin-top:.5rem;display:none"
+                   maxlength="100">
+          </div>
+
+          <!-- Motivo -->
+          <div style="margin-bottom:.85rem">
+            <div class="field-label">Motivo de la citación</div>
+            <textarea name="motivo" class="field-textarea" rows="3" required
+              placeholder="Describe brevemente el motivo de la citación..."
+              maxlength="600"></textarea>
+          </div>
+
+          <!-- Urgente toggle -->
+          <div style="margin-bottom:.85rem">
+            <div class="urgente-toggle" id="urgenteToggle" onclick="toggleUrgente()">
+              <div class="toggle-dot" id="urgDot"></div>
+              <div>
+                <div style="font-weight:700;font-size:.85rem;color:var(--ink)">
+                  <i class="bi bi-exclamation-triangle-fill" style="color:#e0284f"></i>
+                  Marcar como urgente
+                </div>
+                <div style="font-size:.72rem;color:var(--muted)">
+                  Se destacará visualmente para el estudiante
+                </div>
+              </div>
+            </div>
+            <input type="hidden" name="es_urgente" id="urgenteVal" value="0">
+          </div>
+
+          <!-- Notas internas -->
+          <div style="margin-bottom:1rem">
+            <div class="field-label">Notas internas (solo tú las ves)</div>
+            <textarea name="notas_prof" class="field-textarea" rows="2"
+              placeholder="Contexto adicional para tu referencia..."
+              maxlength="400"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.9rem">
+            <i class="bi bi-send-fill"></i> Enviar citación
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+{% else %}
+<!-- ══════════════════ VISTA ESTUDIANTE ══════════════════ -->
+
+  <div class="citaciones-tabs">
+    <button class="ctab active" id="tabProx" onclick="showCitTab('prox',this)">
+      <i class="bi bi-calendar-check-fill"></i> Próximas ({{ proximas|length }})
+    </button>
+    <button class="ctab" id="tabPas" onclick="showCitTab('pas',this)">
+      <i class="bi bi-clock-history"></i> Historial ({{ pasadas|length }})
+    </button>
+  </div>
+
+  <div id="panelProx">
+    {% if proximas %}
+      <div style="display:flex;flex-direction:column;gap:1.1rem">
+      {% for cita in proximas %}
+      {% include 'emotions/_cita_card.html' with cita=cita show_prof=True es_est=True %}
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="cita-empty">
+        <div class="cita-empty-ico"><i class="bi bi-calendar-check-fill"></i></div>
+        <div style="font-weight:700;font-size:1rem;margin-bottom:.35rem">Sin citaciones pendientes</div>
+        <div style="font-size:.85rem">Cuando un profesor te cite, aparecerá aquí</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="panelPas" style="display:none">
+    {% if pasadas %}
+      <div style="display:flex;flex-direction:column;gap:1.1rem">
+      {% for cita in pasadas %}
+      {% include 'emotions/_cita_card.html' with cita=cita show_prof=True es_est=True %}
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="cita-empty">
+        <div class="cita-empty-ico"><i class="bi bi-clock-history"></i></div>
+        <div style="font-weight:700">Sin historial de citaciones</div>
+      </div>
+    {% endif %}
+  </div>
+
+{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showCitTab(tab, btn){
+  document.getElementById('panelProx').style.display = tab==='prox' ? '' : 'none';
+  document.getElementById('panelPas').style.display  = tab==='pas'  ? '' : 'none';
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+{% if not es_estudiante %}
+// ── Buscador de estudiante ──
+function filtrarEstudiantes(q){
+  mostrarDropdown();
+  const opts = document.querySelectorAll('.est-opt');
+  const ql = q.toLowerCase();
+  opts.forEach(opt => {
+    opt.style.display = opt.dataset.name.toLowerCase().includes(ql) ? '' : 'none';
+  });
+  // Si el campo se borró, limpiar selección
+  if(!q){ document.getElementById('estSelId').value = ''; }
+}
+function mostrarDropdown(){
+  document.getElementById('estDropdown').style.display = '';
+}
+function seleccionarEst(el){
+  document.getElementById('estBuscador').value = el.dataset.name;
+  document.getElementById('estSelId').value = el.dataset.id;
+  document.getElementById('estDropdown').style.display = 'none';
+}
+// Cerrar dropdown al hacer clic afuera
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('estBuscador')?.closest('div[style*="position:relative"]');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('estDropdown').style.display = 'none';
+  }
+});
+
+// Estilos hover para opciones
+document.querySelectorAll('.est-opt').forEach(opt => {
+  opt.addEventListener('mouseenter', () => opt.style.background = 'rgba(124,110,255,.08)');
+  opt.addEventListener('mouseleave', () => opt.style.background = '');
+});
+
+function toggleUrgente(){
+  const toggle = document.getElementById('urgenteToggle');
+  const inp    = document.getElementById('urgenteVal');
+  const on = toggle.classList.toggle('on');
+  inp.value = on ? '1' : '0';
+}
+function toggleLugarOtro(){
+  const sel = document.getElementById('lugarSel');
+  const inp = document.getElementById('lugarOtroInp');
+  inp.style.display = sel.value === 'otro' ? '' : 'none';
+  inp.required = sel.value === 'otro';
+}
+{% endif %}
+</script>
+{% endblock %}

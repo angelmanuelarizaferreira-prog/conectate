@@ -1,0 +1,128 @@
+{% extends 'base/base.html' %}
+{% block title %}Mis Insights{% endblock %}
+{% block page_title %}Mis Insights Semanales{% endblock %}
+{% block page_subtitle %}Analisis automatico de tu bienestar emocional{% endblock %}
+{% block extra_css %}
+<style>
+.insight-card{
+  border-radius:var(--r);padding:1.75rem;
+  position:relative;overflow:hidden;
+}
+.insight-card.actual{background:linear-gradient(135deg,rgba(124,110,255,.08),rgba(255,107,157,.05));border:1.5px solid rgba(124,110,255,.2)}
+.insight-card.pasada{background:var(--card);border:1px solid var(--border)}
+.comp-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.6rem 1.1rem;border-radius:50px;
+  font-weight:700;font-size:.88rem;
+}
+.comp-positivo{background:rgba(0,184,122,.12);color:#00b87a}
+.comp-negativo{background:rgba(224,40,79,.1);color:#e0284f}
+.comp-neutro{background:rgba(136,132,168,.1);color:var(--muted)}
+.emo-mini{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.25rem;padding:.5rem;border-radius:10px;background:var(--surface);min-width:52px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <!-- Comparativa -->
+  {% if comparativa %}
+  <div class="card fade-up" style="padding:1.25rem 1.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div style="font-size:1.8rem">
+      {% if comparativa.tipo == 'positivo' %}<i class="bi bi-graph-up-arrow"></i>{% elif comparativa.tipo == 'negativo' %}<i class="bi bi-graph-down-arrow"></i>{% else %}<i class="bi bi-arrow-right"></i>{% endif %}
+    </div>
+    <div class="comp-badge comp-{{ comparativa.tipo }}">{{ comparativa.texto }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Grafica 4 semanas -->
+  <div class="card fade-up fade-up-1" style="padding:0">
+    <div class="card-hd"><span class="card-hd-title"><i class="bi bi-bar-chart-fill"></i> Promedios de las ultimas 4 semanas</span></div>
+    <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gSemanas" height="100"></canvas></div>
+  </div>
+
+  <!-- Esta semana vs semana pasada -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem" class="fade-up fade-up-2">
+
+    <!-- Esta semana -->
+    <div class="insight-card actual">
+      <div style="font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.75rem"><i class="bi bi-calendar3"></i> Esta semana</div>
+      {% if insight_actual %}
+      <div style="font-size:.92rem;line-height:1.7;color:var(--ink);margin-bottom:1rem">{{ insight_actual }}</div>
+      {% else %}
+      <div style="font-size:.88rem;color:var(--muted)">A&uacute;n no hay suficientes datos de esta semana.</div>
+      {% endif %}
+      {% if regs_actual %}
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">
+        {% for reg in regs_actual %}
+        <div class="emo-mini">
+          <span style="font-size:1.3rem"><i class="bi {{ reg.get_emoji }}"></i></span>
+          <span style="font-size:.62rem;color:var(--muted)">{{ reg.fecha|date:"d/m" }}</span>
+          <span style="font-size:.68rem;font-weight:700;color:var(--accent)">{{ reg.puntaje }}/5</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Semana pasada -->
+    <div class="insight-card pasada">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.75rem">
+        <i class="bi bi-calendar3"></i> Semana pasada ({{ lunes_pasado|date:"d/m" }} &mdash; {{ domingo_pasado|date:"d/m" }})
+      </div>
+      {% if insight_pasada %}
+      <div style="font-size:.92rem;line-height:1.7;color:var(--ink);margin-bottom:1rem">{{ insight_pasada }}</div>
+      {% else %}
+      <div style="font-size:.88rem;color:var(--muted)">Sin registros la semana pasada.</div>
+      {% endif %}
+      {% if regs_pasada %}
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">
+        {% for reg in regs_pasada %}
+        <div class="emo-mini">
+          <span style="font-size:1.3rem"><i class="bi {{ reg.get_emoji }}"></i></span>
+          <span style="font-size:.62rem;color:var(--muted)">{{ reg.fecha|date:"d/m" }}</span>
+          <span style="font-size:.68rem;font-weight:700;color:var(--muted)">{{ reg.puntaje }}/5</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Acciones -->
+  <div style="display:flex;gap:.85rem;flex-wrap:wrap" class="fade-up fade-up-3">
+    <a href="{% url 'emotions:historial' %}" class="btn btn-primary"><i class="bi bi-calendar-heart"></i> Ver historial completo</a>
+    <a href="{% url 'emotions:mapa_calor' %}" class="btn btn-ghost"><i class="bi bi-calendar3"></i> Mapa emocional anual</a>
+    <a href="{% url 'emotions:capsulas' %}" class="btn btn-ghost"><i class="bi bi-lightning-fill"></i> C&aacute;psulas de bienestar</a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const sem = {{ semanas_json|safe }};
+new Chart(document.getElementById('gSemanas').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: sem.map(s => s.label + ' (' + s.inicio + ')'),
+    datasets: [{
+      data: sem.map(s => s.prom),
+      backgroundColor: sem.map(s => !s.prom ? 'rgba(136,132,168,.2)' : s.prom >= 3.5 ? 'rgba(0,184,122,.7)' : s.prom >= 2.5 ? 'rgba(245,184,0,.7)' : 'rgba(224,40,79,.7)'),
+      borderRadius: 10, borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } },
+      x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+    },
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ctx.raw ? `Promedio: ${ctx.raw}/5` : 'Sin datos' } }
+    }
+  }
+});
+</script>
+{% endblock %}

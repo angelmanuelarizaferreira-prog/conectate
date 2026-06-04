@@ -1,0 +1,51 @@
+{% extends 'base/base.html' %}
+{% block title %}Nueva Encuesta{% endblock %}
+{% block page_title %}Nueva Encuesta de Bienestar{% endblock %}
+{% block page_subtitle %}Crea una encuesta para tus estudiantes{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:0 auto">
+  <div class="card fade-up" style="padding:2rem">
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div><label class="field-label">T&iacute;tulo *</label><input type="text" name="titulo" class="field-input" placeholder="Ej: &iquest;Como estuvo la carga academica esta semana?" required></div>
+        <div><label class="field-label">Descripci&oacute;n <span style="color:var(--muted);font-weight:400">(opcional)</span></label><textarea name="descripcion" class="field-input" style="resize:vertical;border-radius:var(--r2);width:100%" rows="2" placeholder="Contexto adicional para los estudiantes..."></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+          <div>
+            <label class="field-label">Tipo de respuesta *</label>
+            <select name="tipo" class="field-input field-select" id="tipoSel" onchange="toggleOpciones()">
+              <option value="escala">Escala 1-5</option>
+              <option value="opciones">Opciones m&uacute;ltiple</option>
+              <option value="texto">Respuesta libre</option>
+            </select>
+          </div>
+          <div><label class="field-label">Curso <span style="color:var(--muted);font-weight:400">(opcional)</span></label><select name="curso_id" class="field-input field-select"><option value="">— Todos —</option>{% for c in cursos %}<option value="{{ c.pk }}">{{ c.nombre }}</option>{% endfor %}</select></div>
+        </div>
+        <div id="opcionesField" style="display:none">
+          <label class="field-label">Opciones <span style="color:var(--muted);font-weight:400">(una por l&iacute;nea)</span></label>
+          <textarea name="opciones" class="field-input" style="resize:vertical;border-radius:var(--r2);width:100%" rows="4" placeholder="Muy bien&#10;Bien&#10;Regular&#10;Mal&#10;Muy mal"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;align-items:center">
+          <div><label class="field-label">Fecha l&iacute;mite <span style="color:var(--muted);font-weight:400">(opcional)</span></label><input type="date" name="fecha_limite" class="field-input"></div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem;background:var(--surface);border-radius:var(--r2);margin-top:.5rem">
+            <input type="checkbox" name="anonima" id="anonCk" checked style="width:16px;height:16px;accent-color:var(--accent)">
+            <label for="anonCk" style="font-size:.85rem;font-weight:600;cursor:pointer">Respuestas an&oacute;nimas</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:.5rem">
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center">Crear encuesta</button>
+          <a href="{% url 'emotions:encuestas_lista' %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleOpciones(){
+  const t=document.getElementById('tipoSel').value;
+  document.getElementById('opcionesField').style.display=t==='opciones'?'block':'none';
+}
+</script>
+{% endblock %}

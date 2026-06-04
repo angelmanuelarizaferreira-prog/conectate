@@ -1,0 +1,55 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ actividad.titulo }}{% endblock %}
+{% block page_title %}{{ actividad.titulo }}{% endblock %}
+{% block page_subtitle %}{{ actividad.get_tipo_display }}{% if actividad.curso %} &bull; {{ actividad.curso.nombre }}{% endif %}{% endblock %}
+{% block content %}
+<div style="max-width:740px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+  <div class="card fade-up" style="padding:1.75rem">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+      <div style="width:52px;height:52px;border-radius:14px;background:rgba(124,110,255,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--accent);flex-shrink:0"><i class="{{ actividad.get_tipo_icono }}"></i></div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;color:var(--ink);letter-spacing:-.3px">{{ actividad.titulo }}</div>
+        <div style="font-size:.78rem;color:var(--muted)">{{ actividad.get_tipo_display }}{% if actividad.curso %} &bull; {{ actividad.curso.nombre }}{% endif %}{% if actividad.fecha_limite %} &bull; Limite: {{ actividad.fecha_limite|date:"d/m/Y" }}{% endif %}</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:var(--r2);padding:1.1rem;font-size:.9rem;line-height:1.7;color:var(--ink);white-space:pre-wrap">{{ actividad.descripcion }}</div>
+  </div>
+  {% if user.es_estudiante %}
+    {% if respuesta_existente %}
+    <div class="card fade-up fade-up-1" style="border-color:rgba(0,184,122,.3);background:rgba(0,184,122,.03);padding:1.75rem">
+      <div style="font-weight:700;color:#00b87a;margin-bottom:.85rem;font-size:.9rem"><i class="bi bi-check-circle-fill" style="color:#28a745"></i> Tu respuesta enviada</div>
+      <div style="background:var(--surface);border-radius:var(--r2);padding:1rem;font-size:.9rem;line-height:1.7;white-space:pre-wrap">{{ respuesta_existente.respuesta }}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.75rem">Enviada el {{ respuesta_existente.created_at|date:"d/m/Y H:i" }}</div>
+    </div>
+    {% else %}
+    <div class="card fade-up fade-up-1" style="padding:1.75rem">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:1rem"><i class="bi bi-pencil"></i> Tu respuesta</div>
+      <form method="post">
+        {% csrf_token %}
+        <textarea name="respuesta" class="field-input" style="resize:vertical;min-height:130px;border-radius:var(--r2);width:100%;margin-bottom:.85rem" rows="5" placeholder="Escribe tu respuesta aqui..." required></textarea>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Enviar respuesta</button>
+      </form>
+    </div>
+    {% endif %}
+  {% else %}
+  <div class="card fade-up fade-up-1">
+    <div class="card-hd"><span class="card-hd-title"><i class="bi bi-clipboard2-fill"></i> Respuestas ({{ respuestas.count }})</span></div>
+    {% for resp in respuestas %}
+    <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem">
+        <div style="width:32px;height:32px;border-radius:9px;background:var(--grd);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;flex-shrink:0">{{ resp.estudiante.first_name|first|upper }}{{ resp.estudiante.last_name|first|upper }}</div>
+        <div>
+          <div style="font-weight:600;font-size:.83rem">{{ resp.estudiante.get_full_name }}</div>
+          <div style="font-size:.72rem;color:var(--muted)">{{ resp.created_at|date:"d/m/Y H:i" }}</div>
+        </div>
+        <a href="{% url 'accounts:perfil_estudiante' resp.estudiante.pk %}" class="btn btn-ghost btn-xs" style="margin-left:auto">Ver perfil</a>
+      </div>
+      <div style="background:var(--surface);border-radius:var(--r2);padding:.85rem;font-size:.85rem;line-height:1.65;white-space:pre-wrap">{{ resp.respuesta }}</div>
+    </div>
+    {% empty %}
+    <div class="empty"><span class="empty-ico"><i class="bi bi-envelope-open"></i></span><div class="empty-sub">A&uacute;n no hay respuestas</div></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

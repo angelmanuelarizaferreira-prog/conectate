@@ -1,0 +1,162 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ estudiante.get_full_name }}{% endblock %}
+{% block page_title %}{{ estudiante.get_full_name }}{% endblock %}
+{% block page_subtitle %}Seguimiento emocional — vista de {{ request.user.get_full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem}
+.info-box{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r2);padding:1rem;text-align:center;
+}
+.info-box-val{font-family:'Syne',sans-serif;font-size:1.6rem;color:var(--accent);line-height:1}
+.info-box-lbl{font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:.2rem}
+.reg-row{
+  display:flex;align-items:center;gap:.85rem;
+  padding:.65rem 1rem;border-bottom:1px solid var(--border);
+  transition:background .12s;
+}
+.reg-row:last-child{border-bottom:none}
+.reg-row:hover{background:rgba(124,110,255,.03)}
+.aviso-padre{
+  background:rgba(124,110,255,.06);border:1.5px solid rgba(124,110,255,.18);
+  border-radius:var(--r);padding:1rem 1.25rem;
+  font-size:.83rem;color:var(--muted);line-height:1.65;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Aviso privacidad -->
+  <div class="aviso-padre fade-up">
+    <i class="bi bi-shield-lock-fill" style="color:var(--accent)"></i>
+    <strong style="color:var(--ink)">Información protegida.</strong>
+    Puedes ver el estado emocional general de tu hijo/a, pero
+    <strong>no puedes leer sus entradas del diario</strong> — esas son privadas.
+    Si tienes alguna preocupación, contacta directamente al profesor.
+  </div>
+
+  <!-- Header estudiante -->
+  <div class="card fade-up" style="background:var(--grd2);border:none;padding:1.5rem 1.75rem">
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div style="width:58px;height:58px;border-radius:16px;background:var(--grd);
+                  color:#fff;font-weight:800;font-family:'Syne',sans-serif;font-size:1.3rem;
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        {{ estudiante.first_name|first|upper }}{{ estudiante.last_name|first|upper }}
+      </div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.15rem;color:#fff">{{ estudiante.get_full_name }}</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.4)">
+          {{ vinculo.get_relacion_display }} &bull;
+          {{ cursos|length }} curso{% if cursos|length != 1 %}s{% endif %} inscrito{% if cursos|length != 1 %}s{% endif %}
+        </div>
+      </div>
+      <div style="margin-left:auto">
+        <a href="{% url 'accounts:panel_padre' %}" class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.6)">
+          <i class="bi bi-arrow-left"></i> Volver
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="info-grid fade-up fade-up-1">
+    <div class="info-box">
+      <div class="info-box-val">{{ total_registros }}</div>
+      <div class="info-box-lbl">Días registrados</div>
+    </div>
+    <div class="info-box">
+      <div class="info-box-val">{{ promedio_general|default:"—" }}</div>
+      <div class="info-box-lbl">Promedio emocional</div>
+    </div>
+    <div class="info-box">
+      <div class="info-box-val">{{ racha }}</div>
+      <div class="info-box-lbl">Racha actual <i class="bi bi-fire" style="color:#f97316"></i></div>
+    </div>
+  </div>
+
+  <!-- Gráfica 30 días -->
+  <div class="card fade-up fade-up-2">
+    <div class="card-hd">
+      <span class="card-hd-title"><i class="bi bi-graph-up-arrow"></i> Evolución — últimos 30 días</span>
+    </div>
+    <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gHijo" height="110"></canvas></div>
+  </div>
+
+  <!-- Historial reciente -->
+  <div class="card fade-up fade-up-3">
+    <div class="card-hd">
+      <span class="card-hd-title"><i class="bi bi-clipboard2-fill"></i> Registros recientes</span>
+    </div>
+    {% for reg in registros %}
+    <div class="reg-row">
+      <i class="bi {{ reg.get_emoji }}" style="font-size:1.3rem;flex-shrink:0;color:{% if reg.emocion == 'feliz' %}#28a745{% elif reg.emocion == 'tranquilo' %}#17a2b8{% elif reg.emocion == 'estresado' %}#fd7e14{% elif reg.emocion == 'triste' %}#6c757d{% else %}#dc3545{% endif %}"></i>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:.85rem">{{ reg.get_emocion_display }}</div>
+        <div style="font-size:.72rem;color:var(--muted)">{{ reg.fecha|date:"l, d/m/Y" }}</div>
+      </div>
+      <div class="pdots p{{ reg.puntaje }}">
+        {% for i in "12345" %}<div class="pdot {% if forloop.counter <= reg.puntaje %}on{% endif %}"></div>{% endfor %}
+      </div>
+    </div>
+    {% empty %}
+    <div style="padding:2.5rem;text-align:center;color:var(--muted)">Sin registros aún</div>
+    {% endfor %}
+  </div>
+
+  <!-- Cursos -->
+  {% if cursos %}
+  <div class="card fade-up fade-up-4">
+    <div class="card-hd"><span class="card-hd-title"><i class="bi bi-mortarboard-fill"></i> Cursos inscritos</span></div>
+    <div style="padding:.85rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem">
+      {% for insc in cursos %}
+      <span class="chip chip-info">{{ insc.curso.nombre }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Logros -->
+  {% if logros %}
+  <div class="card fade-up fade-up-4">
+    <div class="card-hd"><span class="card-hd-title"><i class="bi bi-trophy-fill"></i> Logros desbloqueados</span></div>
+    <div style="padding:.85rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem">
+      {% for l in logros %}
+      <span class="chip chip-success"><i class="bi bi-star-fill" style="color:#ffb340"></i> {{ l.nombre }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const pts = {{ puntajes_json|safe }};
+const clrs = pts.map(p => !p ? 'rgba(0,0,0,0)' : ['#e0284f','#f97316','#f5b800','#00c896','#00b87a'][p-1]);
+new Chart(document.getElementById('gHijo').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: {{ fechas_json|safe }},
+    datasets: [{
+      data: pts,
+      borderColor: '#7c6eff', backgroundColor: 'rgba(124,110,255,.07)',
+      fill: true, tension: .4, pointRadius: 5, pointBackgroundColor: clrs,
+      spanGaps: true, borderWidth: 2.5,
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } },
+      x: { ticks: { maxTicksLimit: 10, font: { size: 11 } }, grid: { display: false } }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+</script>
+{% endblock %}

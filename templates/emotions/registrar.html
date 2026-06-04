@@ -1,0 +1,301 @@
+{% extends 'base/base.html' %}
+{% load emotion_tags %}
+{% block title %}Cómo me siento{% endblock %}
+{% block page_title %}¿Cómo te sientes hoy?{% endblock %}
+{% block page_subtitle %}{{ hoy|date:"l, d \d\e F \d\e Y" }}{% endblock %}
+{% block extra_css %}
+<style>
+/* ── Emotion grid ── */
+.emo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.85rem}
+.emo-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--r);padding:1.4rem .75rem 1rem;
+  text-align:center;cursor:pointer;
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);
+  position:relative;overflow:hidden;
+}
+.emo-card::before{
+  content:'';position:absolute;inset:0;
+  background:var(--emo-color,rgba(124,110,255,.06));
+  opacity:0;transition:opacity .22s;
+}
+.emo-card:hover{transform:translateY(-5px);box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.emo-card:hover::before{opacity:1}
+.emo-card.sel{
+  border-color:var(--emo-color,var(--accent));
+  transform:translateY(-5px);
+  box-shadow:0 8px 32px rgba(0,0,0,.12);
+}
+.emo-card.sel::before{opacity:1}
+.emo-card .ico{font-size:2.8rem;line-height:1;margin-bottom:.65rem;transition:transform .22s;display:block}
+.emo-card:hover .ico,.emo-card.sel .ico{transform:scale(1.18)}
+.emo-card .lbl{font-size:.8rem;font-weight:700;color:var(--ink);text-transform:capitalize}
+.emo-card .sel-check{
+  position:absolute;top:.5rem;right:.5rem;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--emo-color,var(--accent));
+  color:#fff;font-size:.65rem;
+  display:none;align-items:center;justify-content:center;
+}
+.emo-card.sel .sel-check{display:flex}
+
+/* ── Scale ── */
+.scale-row{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap}
+.scale-btn{
+  width:54px;height:54px;border-radius:50%;
+  border:2px solid var(--border);background:var(--card);
+  font-weight:800;font-size:1.05rem;cursor:pointer;
+  transition:all .2s;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+}
+.scale-btn:hover{transform:scale(1.1)}
+.scale-btn.s1:hover,.scale-btn.s1.on{background:#e0284f;border-color:#e0284f;color:#fff;transform:scale(1.15)}
+.scale-btn.s2:hover,.scale-btn.s2.on{background:#f97316;border-color:#f97316;color:#fff;transform:scale(1.15)}
+.scale-btn.s3:hover,.scale-btn.s3.on{background:#f5b800;border-color:#f5b800;color:#111;transform:scale(1.15)}
+.scale-btn.s4:hover,.scale-btn.s4.on{background:#00c896;border-color:#00c896;color:#fff;transform:scale(1.15)}
+.scale-btn.s5:hover,.scale-btn.s5.on{background:#00b87a;border-color:#00b87a;color:#fff;transform:scale(1.15)}
+
+/* ── Meta strip ── */
+.meta-strip{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:1.1rem 1.4rem;
+  display:flex;align-items:center;gap:1rem;
+  transition:border-color .2s,box-shadow .2s;
+}
+.meta-strip:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+
+/* ── Step label ── */
+.step-label{
+  font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.85rem;display:flex;align-items:center;gap:.4rem
+}
+.step-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  font-size:.65rem;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+
+/* ── Textarea ── */
+.field-textarea{
+  width:100%;padding:.9rem 1.1rem;
+  border:1.5px solid var(--border);border-radius:var(--r2);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:.88rem;
+  color:var(--ink);resize:none;outline:none;
+  transition:border .18s,box-shadow .18s;background:var(--card);
+}
+.field-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,110,255,.12)}
+
+/* ── Week mini ── */
+.week-strip{display:flex;gap:.6rem;overflow-x:auto;padding:.5rem 0}
+.wday-mini{
+  flex-shrink:0;text-align:center;padding:.65rem .9rem;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;min-width:64px;
+}
+.wday-mini.hoy{border-color:var(--accent);background:rgba(124,110,255,.06)}
+
+/* ── Mood indicator ── */
+.mood-bar{height:6px;border-radius:3px;margin-top:.6rem;transition:background 3s}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Meta semanal -->
+  <div class="meta-strip fade-up">
+    <div style="font-size:1.6rem"><i class="bi bi-bullseye"></i></div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.2rem">Mi meta esta semana</div>
+      {% if meta_semana.texto %}
+        <div style="font-size:.88rem;color:var(--ink);font-weight:500">{{ meta_semana.texto }}</div>
+        {% if meta_semana.cumplida %}
+          <span class="chip chip-success" style="margin-top:.4rem;font-size:.72rem"><i class="bi bi-check-circle-fill" style="color:#28a745"></i> Cumplida</span>
+        {% endif %}
+      {% else %}
+        <div style="font-size:.85rem;color:var(--muted)">Aún no definiste tu meta de esta semana</div>
+      {% endif %}
+    </div>
+    <button class="btn btn-ghost btn-sm btn-icon" onclick="document.getElementById('metaForm').classList.toggle('d-none')" title="Editar meta">
+      <i class="bi bi-pencil-fill"></i>
+    </button>
+  </div>
+
+  <div id="metaForm" class="card  fade-up" style="display:none" style="padding:1.25rem 1.4rem">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="meta">
+      <div style="font-weight:600;font-size:.88rem;margin-bottom:.85rem;color:var(--ink)">Escribe tu meta para esta semana</div>
+      <div style="display:flex;gap:.65rem">
+        <input type="text" name="meta_texto" class="field-input" placeholder="Ej: Registrar mi emoción todos los días..." value="{{ meta_semana.texto }}" maxlength="200" style="flex:1">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+      {% if meta_semana.texto %}
+      <div style="margin-top:.75rem">
+        <a href="?accion=meta_cumplida" class="btn btn-ghost btn-sm" onclick="this.closest('form').querySelector('[name=accion]').value='meta_cumplida';this.closest('form').submit();return false;">
+          {% if meta_semana.cumplida %}<i class="bi bi-arrow-counterclockwise"></i> Desmarcar como cumplida{% else %}<i class="bi bi-check-circle-fill" style="color:#28a745"></i> Marcar como cumplida{% endif %}
+        </a>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Form principal -->
+  <form method="post" id="fEmo">
+    {% csrf_token %}
+
+    <!-- Paso 1: emoción -->
+    <div class="card fade-up fade-up-1" style="padding:1.6rem">
+      <div class="step-label"><span class="step-num">1</span> Emoción de hoy</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.15rem;color:var(--ink);margin-bottom:1.1rem;letter-spacing:-.3px">
+        ¿Qué emoción te describe mejor ahora mismo?
+      </div>
+      <div class="emo-grid">
+        <div class="emo-card {% if ya_registro and ya_registro.emocion == 'feliz' %}sel{% endif %}"
+             style="--emo-color:#28a745" onclick="pickEmo('feliz',this)">
+          <div class="sel-check"><i class="bi bi-check-lg"></i></div>
+          <span class="ico"><i class="bi bi-emoji-smile-fill" style="color:#28a745"></i></span>
+          <div class="lbl">Feliz</div>
+        </div>
+        <div class="emo-card {% if ya_registro and ya_registro.emocion == 'tranquilo' %}sel{% endif %}"
+             style="--emo-color:#17a2b8" onclick="pickEmo('tranquilo',this)">
+          <div class="sel-check"><i class="bi bi-check-lg"></i></div>
+          <span class="ico"><i class="bi bi-emoji-neutral-fill" style="color:#17a2b8"></i></span>
+          <div class="lbl">Tranquilo</div>
+        </div>
+        <div class="emo-card {% if ya_registro and ya_registro.emocion == 'estresado' %}sel{% endif %}"
+             style="--emo-color:#fd7e14" onclick="pickEmo('estresado',this)">
+          <div class="sel-check"><i class="bi bi-check-lg"></i></div>
+          <span class="ico"><i class="bi bi-emoji-dizzy-fill" style="color:#fd7e14"></i></span>
+          <div class="lbl">Estresado</div>
+        </div>
+        <div class="emo-card {% if ya_registro and ya_registro.emocion == 'triste' %}sel{% endif %}"
+             style="--emo-color:#6c757d" onclick="pickEmo('triste',this)">
+          <div class="sel-check"><i class="bi bi-check-lg"></i></div>
+          <span class="ico"><i class="bi bi-emoji-frown-fill" style="color:#6c757d"></i></span>
+          <div class="lbl">Triste</div>
+        </div>
+        <div class="emo-card {% if ya_registro and ya_registro.emocion == 'enojado' %}sel{% endif %}"
+             style="--emo-color:#dc3545" onclick="pickEmo('enojado',this)">
+          <div class="sel-check"><i class="bi bi-check-lg"></i></div>
+          <span class="ico"><i class="bi bi-emoji-angry-fill" style="color:#dc3545"></i></span>
+          <div class="lbl">Enojado</div>
+        </div>
+      </div>
+      <input type="hidden" name="emocion" id="emoIn" value="{{ ya_registro.emocion|default:'' }}">
+    </div>
+
+    <!-- Paso 2: intensidad -->
+    <div class="card fade-up fade-up-2" style="padding:1.6rem;margin-top:1.25rem">
+      <div class="step-label"><span class="step-num">2</span> Intensidad</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.15rem;color:var(--ink);margin-bottom:1.1rem;letter-spacing:-.3px">
+        ¿Con qué intensidad la sientes?
+      </div>
+      <div class="scale-row">
+        <div style="text-align:center">
+          <div style="font-size:1.3rem"><i class="bi bi-emoji-frown-fill"></i></div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:.2rem">Muy mal</div>
+        </div>
+        {% for i in "12345" %}
+        <button type="button"
+          class="scale-btn s{{ forloop.counter }} {% if ya_registro and ya_registro.puntaje == forloop.counter %}on{% endif %}"
+          onclick="pickScale({{ forloop.counter }},this)">{{ forloop.counter }}</button>
+        {% endfor %}
+        <div style="text-align:center">
+          <div style="font-size:1.3rem"><i class="bi bi-emoji-smile-fill" style="color:#28a745"></i></div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:.2rem">Muy bien</div>
+        </div>
+      </div>
+      <div id="scaleLabel" style="margin-top:.9rem;font-size:.9rem;font-weight:700;color:var(--accent);min-height:22px">
+        {% if ya_registro %}
+          {% if ya_registro.puntaje == 1 %}Muy mal <i class="bi bi-emoji-frown-fill"></i>{% elif ya_registro.puntaje == 2 %}Mal <i class="bi bi-emoji-frown-fill"></i>{% elif ya_registro.puntaje == 3 %}Regular <i class="bi bi-emoji-neutral-fill"></i>{% elif ya_registro.puntaje == 4 %}Bien <i class="bi bi-emoji-smile"></i>{% elif ya_registro.puntaje == 5 %}Muy bien <i class="bi bi-emoji-smile-fill" style="color:#28a745"></i>{% endif %}
+        {% endif %}
+      </div>
+      <div class="mood-bar" id="moodBar"></div>
+      <input type="hidden" name="puntaje" id="scaleIn" value="{{ ya_registro.puntaje|default:'' }}">
+    </div>
+
+    <!-- Paso 3: comentario -->
+    <div class="card fade-up fade-up-3" style="padding:1.6rem;margin-top:1.25rem">
+      <div class="step-label"><span class="step-num">3</span> Cuéntanos (opcional)</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.15rem;color:var(--ink);margin-bottom:.3rem;letter-spacing:-.3px">
+        ¿Quieres contarnos algo?
+      </div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:.9rem">Tu espacio confidencial <i class="bi bi-lock-fill"></i></div>
+      <textarea name="comentario" class="field-textarea" rows="3"
+        placeholder="¿Qué pasó hoy? ¿Algo que te preocupa o alegra?"
+        maxlength="500">{{ ya_registro.comentario|default:'' }}</textarea>
+    </div>
+
+    <div style="display:flex;gap:.75rem;margin-top:1.25rem" class="fade-up fade-up-4">
+      <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;padding:.9rem;font-size:.95rem">
+        <i class="bi bi-heart-fill"></i>
+        {% if ya_registro %}Actualizar mi registro{% else %}Guardar cómo me siento{% endif %}
+      </button>
+      <a href="{% url 'dashboard:inicio' %}" class="btn btn-ghost" style="padding:.9rem 1.5rem">Cancelar</a>
+    </div>
+  </form>
+
+  <!-- Mini historial semana -->
+  {% if historial %}
+  <div class="card fade-up" style="padding:1.25rem 1.4rem">
+    <div style="font-weight:700;font-size:.85rem;margin-bottom:.85rem;color:var(--ink)"><i class="bi bi-calendar3"></i> Tu semana</div>
+    <div class="week-strip">
+      {% for reg in historial %}
+      <div class="wday-mini {% if reg.fecha == hoy %}hoy{% endif %}">
+        <div style="font-size:.65rem;color:var(--muted);font-weight:600">{{ reg.fecha|date:"D"|slice:":3"|upper }}</div>
+        <div style="font-size:.6rem;color:var(--muted)">{{ reg.fecha|date:"d/m" }}</div>
+        <div style="font-size:1.6rem;margin:.3rem 0;line-height:1"><i class="bi {{ reg.get_emoji }}"></i></div>
+        <div style="font-size:.72rem;font-weight:800;color:var(--accent)">{{ reg.puntaje }}/5</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const labels={1:'Muy mal <i class="bi bi-emoji-frown-fill"></i>',2:'Mal <i class="bi bi-emoji-frown-fill"></i>',3:'Regular <i class="bi bi-emoji-neutral-fill"></i>',4:'Bien <i class="bi bi-emoji-smile"></i>',5:'Muy bien <i class="bi bi-emoji-smile-fill" style="color:#28a745"></i>'};
+const barColors={1:'#e0284f',2:'#f97316',3:'#f5b800',4:'#00c896',5:'#00b87a'};
+
+function pickEmo(v,el){
+  document.querySelectorAll('.emo-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('emoIn').value=v;
+}
+function pickScale(v,el){
+  document.querySelectorAll('.scale-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('scaleIn').value=v;
+  document.getElementById('scaleLabel').innerHTML=labels[v];
+  const bar=document.getElementById('moodBar');
+  bar.style.background=`linear-gradient(90deg,${barColors[v]},${barColors[v]}88)`;
+  bar.style.width=(v/5*100)+'%';
+}
+// Init bar if already has value
+(function(){
+  const v=parseInt(document.getElementById('scaleIn').value);
+  if(v){
+    const bar=document.getElementById('moodBar');
+    bar.style.background=`linear-gradient(90deg,${barColors[v]},${barColors[v]}88)`;
+    bar.style.width=(v/5*100)+'%';
+  }
+})();
+document.getElementById('fEmo').addEventListener('submit',function(e){
+  if(!document.getElementById('emoIn').value){
+    e.preventDefault();
+    alert('Selecciona una emoción primero.');
+    return;
+  }
+  if(!document.getElementById('scaleIn').value){
+    e.preventDefault();
+    alert('Selecciona una escala del 1 al 5.');
+    return;
+  }
+});
+</script>
+{% endblock %}

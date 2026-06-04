@@ -1,0 +1,171 @@
+{% extends 'base/base.html' %}
+{% block title %}Mi Historial{% endblock %}
+{% block page_title %}Mi Historial Emocional{% endblock %}
+{% block page_subtitle %}Tu evoluci&oacute;n y estad&iacute;sticas personales{% endblock %}
+{% block extra_css %}
+<style>
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.emo-bar{display:flex;align-items:center;gap:.75rem;padding:.5rem 0}
+.emo-bar-track{flex:1;height:8px;background:var(--border);border-radius:50px;overflow:hidden}
+.emo-bar-fill{height:100%;border-radius:50px;transition:width .6s ease}
+.goal-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r2);padding:1rem;
+  transition:all .2s;
+}
+.goal-card.done{border-color:rgba(0,184,122,.3);background:rgba(0,184,122,.04)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Stats -->
+  <div class="stat-row fade-up">
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(124,110,255,.1)"><i class="bi bi-calendar3"></i></div>
+      <div><div class="stat-val">{{ total_registros }}</div><div class="stat-lbl">D&iacute;as registrados</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(0,212,170,.1)"><i class="bi bi-star-fill" style="color:#ffb340"></i></div>
+      <div><div class="stat-val">{{ promedio|default:"—" }}</div><div class="stat-lbl">Promedio general</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(255,179,64,.1)"><i class="bi bi-fire"></i></div>
+      <div><div class="stat-val">{{ racha }}</div><div class="stat-lbl">Racha actual</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ico" style="background:rgba(255,107,157,.1)"><i class="bi bi-bullseye"></i></div>
+      <div><div class="stat-val">{{ metas.count }}</div><div class="stat-lbl">Metas registradas</div></div>
+    </div>
+  </div>
+
+  <!-- Grafica + distribucion -->
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:1.25rem" class="fade-up fade-up-1">
+
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title"><i class="bi bi-graph-up-arrow"></i> Evoluci&oacute;n &mdash; &uacute;ltimos 30 d&iacute;as</span>
+        <a href="{% url 'emotions:registrar' %}" class="btn btn-primary btn-sm">Registrar hoy</a>
+      </div>
+      <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gHistorial" height="130"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-mask"></i> Mis emociones</span></div>
+      <div style="padding:1rem">
+        <div style="display:flex;justify-content:center;margin-bottom:1rem">
+          <canvas id="gEmo" height="160" style="max-width:160px"></canvas>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.35rem">
+          <div class="emo-bar">
+            <span style="font-size:.8rem;width:80px;color:var(--ink);font-weight:600"><i class="bi bi-emoji-smile-fill" style="color:#28a745"></i> Feliz</span>
+            <div class="emo-bar-track"><div class="emo-bar-fill" style="width:{% widthratio conteo_emociones.feliz total_registros 100 %}%;background:#00b87a"></div></div>
+            <span style="font-size:.75rem;color:var(--muted);width:24px;text-align:right">{{ conteo_emociones.feliz }}</span>
+          </div>
+          <div class="emo-bar">
+            <span style="font-size:.8rem;width:80px;color:var(--ink);font-weight:600"><i class="bi bi-emoji-neutral-fill" style="color:#17a2b8"></i> Tranquilo</span>
+            <div class="emo-bar-track"><div class="emo-bar-fill" style="width:{% widthratio conteo_emociones.tranquilo total_registros 100 %}%;background:#17a2b8"></div></div>
+            <span style="font-size:.75rem;color:var(--muted);width:24px;text-align:right">{{ conteo_emociones.tranquilo }}</span>
+          </div>
+          <div class="emo-bar">
+            <span style="font-size:.8rem;width:80px;color:var(--ink);font-weight:600"><i class="bi bi-emoji-dizzy-fill" style="color:#fd7e14"></i> Estresado</span>
+            <div class="emo-bar-track"><div class="emo-bar-fill" style="width:{% widthratio conteo_emociones.estresado total_registros 100 %}%;background:#f5b800"></div></div>
+            <span style="font-size:.75rem;color:var(--muted);width:24px;text-align:right">{{ conteo_emociones.estresado }}</span>
+          </div>
+          <div class="emo-bar">
+            <span style="font-size:.8rem;width:80px;color:var(--ink);font-weight:600"><i class="bi bi-emoji-frown-fill" style="color:#6c757d"></i> Triste</span>
+            <div class="emo-bar-track"><div class="emo-bar-fill" style="width:{% widthratio conteo_emociones.triste total_registros 100 %}%;background:#8884a8"></div></div>
+            <span style="font-size:.75rem;color:var(--muted);width:24px;text-align:right">{{ conteo_emociones.triste }}</span>
+          </div>
+          <div class="emo-bar">
+            <span style="font-size:.8rem;width:80px;color:var(--ink);font-weight:600"><i class="bi bi-emoji-angry-fill" style="color:#dc3545"></i> Enojado</span>
+            <div class="emo-bar-track"><div class="emo-bar-fill" style="width:{% widthratio conteo_emociones.enojado total_registros 100 %}%;background:#e0284f"></div></div>
+            <span style="font-size:.75rem;color:var(--muted);width:24px;text-align:right">{{ conteo_emociones.enojado }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metas -->
+  {% if metas %}
+  <div class="fade-up fade-up-2">
+    <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.85rem"><i class="bi bi-bullseye"></i> Mis metas recientes</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem">
+      {% for meta in metas %}
+      <div class="goal-card {% if meta.cumplida %}done{% endif %}">
+        <div style="font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Semana del {{ meta.semana_inicio|date:"d/m" }}</div>
+        <div style="font-size:.85rem;font-weight:600;color:var(--ink);line-height:1.4">{{ meta.texto }}</div>
+        <div style="margin-top:.5rem">
+          {% if meta.cumplida %}<span class="chip chip-success"><i class="bi bi-check-circle-fill" style="color:#28a745"></i> Cumplida</span>
+          {% else %}<span class="chip chip-dark">En progreso</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tabla -->
+  <div class="card fade-up fade-up-3">
+    <div class="card-hd"><span class="card-hd-title"><i class="bi bi-clipboard2-fill"></i> Todos los registros</span></div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="padding-left:1.5rem">Fecha</th>
+            <th>Emoci&oacute;n</th>
+            <th>Puntaje</th>
+            <th>Comentario</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reg in registros %}
+          <tr>
+            <td style="padding-left:1.5rem">
+              <div style="font-weight:600;font-size:.83rem">{{ reg.fecha|date:"d/m/Y" }}</div>
+              <div style="font-size:.72rem;color:var(--muted)">{{ reg.fecha|date:"l" }}</div>
+            </td>
+            <td><span class="chip chip-{{ reg.emocion }}"><i class="bi {{ reg.get_emoji }}"></i> {{ reg.get_emocion_display }}</span></td>
+            <td>
+              <div class="pdots p{{ reg.puntaje }}">
+                {% for i in "12345" %}<div class="pdot {% if forloop.counter <= reg.puntaje %}on{% endif %}"></div>{% endfor %}
+              </div>
+            </td>
+            <td style="color:var(--muted);font-style:italic">{{ reg.comentario|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;padding:3rem">
+            <div class="empty"><span class="empty-ico"><i class="bi bi-flower1"></i></span><div class="empty-title">A&uacute;n sin registros</div><div class="empty-sub">&iexcl;Empieza hoy!</div></div>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const puntajes={{ puntajes_json|safe }};
+const clrs=puntajes.map(p=>!p?'rgba(0,0,0,0)':['#e0284f','#f97316','#f5b800','#00c896','#00b87a'][p-1]);
+new Chart(document.getElementById('gHistorial').getContext('2d'),{
+  type:'line',
+  data:{
+    labels:{{ fechas_json|safe }},
+    datasets:[{label:'Puntaje',data:puntajes,borderColor:'#7c6eff',backgroundColor:'rgba(124,110,255,.07)',
+      fill:true,tension:.4,pointRadius:5,pointBackgroundColor:clrs,spanGaps:true,borderWidth:2.5}]
+  },
+  options:{responsive:true,scales:{y:{min:0,max:5,ticks:{stepSize:1,font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{maxTicksLimit:10,font:{size:11}},grid:{display:false}}},plugins:{legend:{display:false}}}
+});
+const em={{ conteo_emociones_json|safe }};
+new Chart(document.getElementById('gEmo').getContext('2d'),{
+  type:'doughnut',
+  data:{labels:['Feliz','Tranquilo','Estresado','Triste','Enojado'],
+    datasets:[{data:[em.feliz,em.tranquilo,em.estresado,em.triste,em.enojado],backgroundColor:['#00b87a','#17a2b8','#f5b800','#8884a8','#e0284f'],borderWidth:0,hoverOffset:6}]},
+  options:{responsive:true,cutout:'70%',plugins:{legend:{display:false}}}
+});
+</script>
+{% endblock %}

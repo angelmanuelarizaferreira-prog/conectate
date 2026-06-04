@@ -1,0 +1,328 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ curso.nombre }}{% endblock %}
+{% block page_title %}{{ curso.nombre }}{% endblock %}
+{% block page_subtitle %}{% if curso.profesor %}Prof. {{ curso.profesor.get_full_name }}{% endif %} &bull; {{ total_companeros }} compañero{% if total_companeros != 1 %}s{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Hero ── */
+.curso-hero{
+  background:var(--grd2);border-radius:var(--r);
+  padding:1.75rem 2rem;position:relative;overflow:hidden;
+}
+.curso-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(124,110,255,.2);filter:blur(40px);pointer-events:none}
+.curso-hero::after{content:'';position:absolute;bottom:-30px;left:30%;width:130px;height:130px;border-radius:50%;background:rgba(255,107,157,.15);filter:blur(30px);pointer-events:none}
+
+/* ── Semanas ── */
+.semana-block{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  transition:box-shadow .18s;
+}
+.semana-block:hover{box-shadow:var(--shadow)}
+.semana-hdr{
+  display:flex;align-items:center;gap:1rem;
+  padding:1rem 1.4rem;cursor:pointer;
+  user-select:none;
+  background:rgba(124,110,255,.04);
+  border-bottom:1px solid var(--border);
+  transition:background .12s;
+}
+.semana-hdr:hover{background:rgba(124,110,255,.08)}
+.semana-hdr.open{background:rgba(124,110,255,.08)}
+.semana-num{
+  width:40px;height:40px;border-radius:12px;
+  background:var(--grd);color:#fff;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 4px 12px rgba(124,110,255,.3);
+}
+.semana-title{font-family:'Syne',sans-serif;font-weight:800;font-size:.92rem;color:var(--ink)}
+.semana-sub{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+.semana-chevron{margin-left:auto;font-size:.9rem;color:var(--muted);transition:transform .2s}
+.semana-hdr.open .semana-chevron{transform:rotate(180deg)}
+
+/* Barra de progreso por semana */
+.semana-prog{
+  height:4px;background:var(--border);border-radius:2px;flex-shrink:0;width:80px;overflow:hidden;
+}
+.semana-prog-fill{height:100%;border-radius:2px;background:var(--grd3);transition:width .4s ease}
+
+/* ── Actividades dentro de semana ── */
+.semana-body{display:none;padding:.5rem .85rem .85rem}
+.semana-body.open{display:block}
+
+.act-item{
+  display:flex;align-items:center;gap:.85rem;
+  padding:.75rem .9rem;border-radius:10px;
+  text-decoration:none;color:var(--ink);
+  transition:background .12s, transform .12s;
+  border:1px solid transparent;
+  margin-bottom:.4rem;
+}
+.act-item:hover{background:rgba(124,110,255,.06);border-color:rgba(124,110,255,.15);transform:translateX(3px)}
+.act-item:last-child{margin-bottom:0}
+.act-item.respondida{background:rgba(0,184,122,.04);border-color:rgba(0,184,122,.12)}
+.act-ico{
+  width:40px;height:40px;border-radius:11px;
+  background:rgba(255,179,64,.12);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.15rem;flex-shrink:0;
+}
+.act-ico.respondida-ico{background:rgba(0,184,122,.12)}
+.act-title{font-weight:700;font-size:.85rem;color:var(--ink)}
+.act-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+.act-badge{
+  margin-left:auto;flex-shrink:0;
+  font-size:.72rem;font-weight:700;
+  display:flex;align-items:center;gap:.3rem;
+}
+.act-badge.done{color:#00b87a}
+.act-badge.pending{color:var(--accent)}
+
+/* ── Semana vacía ── */
+.semana-empty{
+  padding:1.5rem;text-align:center;color:var(--muted);font-size:.83rem;
+}
+.semana-empty-ico{font-size:2rem;opacity:.2;margin-bottom:.4rem}
+
+/* ── Quick actions ── */
+.quick-card{
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);
+  padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;
+  text-decoration:none;color:var(--ink);
+  transition:transform .15s,box-shadow .15s,border-color .15s;
+}
+.quick-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:rgba(124,110,255,.3);color:var(--ink)}
+.quick-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+
+/* ── Mis emociones ministrip ── */
+.emo-strip{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.emo-dot{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;title:'';flex-shrink:0}
+
+/* ── Sin semanas ── */
+.no-content{text-align:center;padding:4rem 2rem;color:var(--muted)}
+.no-content-ico{font-size:4rem;opacity:.18;margin-bottom:.75rem}
+
+/* Dark */
+body.dark .semana-hdr{background:rgba(157,143,255,.05)}
+body.dark .semana-hdr:hover,.semana-hdr.open{background:rgba(157,143,255,.09)}
+body.dark .act-item:hover{background:rgba(157,143,255,.07)}
+body.dark .act-item.respondida{background:rgba(0,184,122,.06)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Hero del curso -->
+  <div class="curso-hero fade-up">
+    <div style="position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:900;color:#fff;line-height:1.1">
+          {{ curso.nombre }}
+        </div>
+        {% if curso.descripcion %}
+        <div style="color:rgba(255,255,255,.55);font-size:.83rem;margin-top:.5rem;max-width:480px">{{ curso.descripcion }}</div>
+        {% endif %}
+        <div style="margin-top:1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+          <span style="font-size:.75rem;color:rgba(255,255,255,.5)">
+            <i class="bi bi-people-fill"></i> {{ total_companeros }} compañero{% if total_companeros != 1 %}s{% endif %}
+          </span>
+          <span style="font-size:.75rem;color:rgba(255,255,255,.5)">
+            <i class="bi bi-grid-3x3-gap-fill"></i> {{ semanas_list|length }} semana{% if semanas_list|length != 1 %}s{% endif %}
+          </span>
+        </div>
+      </div>
+      <!-- Progreso total -->
+      {% with total_act=semanas_list|length %}
+      <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.9rem 1.25rem;text-align:center;min-width:120px">
+        <div style="font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:900;color:#fff;line-height:1" id="pct">—</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-top:.2rem">Tu avance</div>
+      </div>
+      {% endwith %}
+    </div>
+  </div>
+
+  <!-- Quick links -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.85rem" class="fade-up fade-up-1">
+    <a href="{% url 'emotions:registrar' %}" class="quick-card">
+      <div class="quick-ico" style="background:rgba(255,107,157,.12)"><i class="bi bi-heart-pulse-fill" style="color:#ff6b9d"></i></div>
+      <div>
+        <div style="font-weight:700;font-size:.83rem">Registrar emoción</div>
+        <div style="font-size:.7rem;color:var(--muted)">¿Cómo estás hoy?</div>
+      </div>
+    </a>
+    <a href="{% url 'emotions:foro' curso.pk %}" class="quick-card">
+      <div class="quick-ico" style="background:rgba(124,110,255,.12)"><i class="bi bi-chat-square-heart-fill" style="color:var(--accent)"></i></div>
+      <div>
+        <div style="font-weight:700;font-size:.83rem">Foro del grupo</div>
+        <div style="font-size:.7rem;color:var(--muted)">Comparte con tu clase</div>
+      </div>
+    </a>
+    <a href="{% url 'emotions:historial' %}" class="quick-card">
+      <div class="quick-ico" style="background:rgba(0,212,170,.12)"><i class="bi bi-bar-chart-fill" style="color:#00d4aa"></i></div>
+      <div>
+        <div style="font-weight:700;font-size:.83rem">Mi historial</div>
+        <div style="font-size:.7rem;color:var(--muted)">Ver mi progreso</div>
+      </div>
+    </a>
+    <a href="{% url 'emotions:citaciones_lista' %}" class="quick-card">
+      <div class="quick-ico" style="background:rgba(255,179,64,.12)"><i class="bi bi-calendar-event-fill" style="color:#ffb340"></i></div>
+      <div>
+        <div style="font-weight:700;font-size:.83rem">Mis citaciones</div>
+        <div style="font-size:.7rem;color:var(--muted)">Ver convocatorias</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Contenido por semanas (estilo Moodle) -->
+  <div class="fade-up fade-up-2">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+      <div style="font-weight:800;font-size:.95rem;color:var(--ink)">
+        <i class="bi bi-calendar-week-fill" style="color:var(--accent)"></i> Contenido del curso
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="toggleAll()" id="toggleBtn">
+        <i class="bi bi-chevron-expand"></i> Expandir todo
+      </button>
+    </div>
+
+    {% if semanas_list %}
+    <div style="display:flex;flex-direction:column;gap:.75rem" id="semanasWrap">
+      {% for semana in semanas_list %}
+      <div class="semana-block" id="semana-{{ semana.numero }}">
+
+        <!-- Header de semana -->
+        <div class="semana-hdr {% if forloop.first %}open{% endif %}" onclick="toggleSemana({{ semana.numero }})">
+          <div class="semana-num">{{ semana.numero }}</div>
+          <div style="flex:1;min-width:0">
+            <div class="semana-title">Semana {{ semana.numero }}</div>
+            <div class="semana-sub">
+              {{ semana.respondidas }}/{{ semana.total }} actividade{% if semana.total != 1 %}s{% endif %} completada{% if semana.respondidas != 1 %}s{% endif %}
+            </div>
+          </div>
+          <!-- Barra de progreso de la semana -->
+          <div class="semana-prog" title="{{ semana.respondidas }}/{{ semana.total }}">
+            {% if semana.total > 0 %}
+            <div class="semana-prog-fill" style="width:{% widthratio semana.respondidas semana.total 100 %}%"></div>
+            {% endif %}
+          </div>
+          {% if semana.respondidas == semana.total and semana.total > 0 %}
+          <i class="bi bi-check-circle-fill" style="color:#00b87a;font-size:1rem;flex-shrink:0"></i>
+          {% endif %}
+          <i class="bi bi-chevron-down semana-chevron"></i>
+        </div>
+
+        <!-- Cuerpo de la semana -->
+        <div class="semana-body {% if forloop.first %}open{% endif %}">
+          {% if semana.actividades %}
+            {% for act in semana.actividades %}
+            {% if act.id in ids_respondidas %}
+            <a href="{% url 'activities:detalle' act.pk %}" class="act-item respondida">
+              <div class="act-ico respondida-ico"><i class="bi {{ act.get_tipo_emoji }}"></i></div>
+            {% else %}
+            <a href="{% url 'activities:detalle' act.pk %}" class="act-item">
+              <div class="act-ico"><i class="bi {{ act.get_tipo_emoji }}"></i></div>
+            {% endif %}
+              <div style="flex:1;min-width:0">
+                <div class="act-title">{{ act.titulo }}</div>
+                <div class="act-meta">
+                  {{ act.get_tipo_display }}
+                  {% if act.fecha_limite %}
+                  &bull; <i class="bi bi-clock"></i> Límite: {{ act.fecha_limite|date:"d/m/Y" }}
+                  {% endif %}
+                </div>
+              </div>
+              <div class="act-badge {% if act.id in ids_respondidas %}done{% else %}pending{% endif %}">
+                {% if act.id in ids_respondidas %}
+                <i class="bi bi-check-circle-fill"></i> Completada
+                {% else %}
+                Pendiente <i class="bi bi-arrow-right-short"></i>
+                {% endif %}
+              </div>
+            </a>
+            {% endfor %}
+          {% else %}
+          <div class="semana-empty">
+            <div class="semana-empty-ico"><i class="bi bi-inbox"></i></div>
+            El profesor no ha publicado contenido para esta semana todavía
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="no-content card">
+      <div class="no-content-ico"><i class="bi bi-calendar-week"></i></div>
+      <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">El profesor no ha publicado contenido aún</div>
+      <div style="font-size:.85rem">Las actividades aparecerán aquí organizadas por semana</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Mis emociones recientes (solo las del propio estudiante) -->
+  {% if mis_registros %}
+  <div class="card fade-up fade-up-3" style="padding:1.25rem">
+    <div style="font-weight:700;font-size:.85rem;color:var(--ink);margin-bottom:.75rem">
+      <i class="bi bi-heart-pulse-fill" style="color:#ff6b9d"></i> Mis emociones recientes
+    </div>
+    <div class="emo-strip">
+      {% for reg in mis_registros %}
+      <div class="emo-dot"
+           style="background:{% if reg.puntaje >= 4 %}#00b87a{% elif reg.puntaje >= 3 %}#f5b800{% elif reg.puntaje >= 2 %}#fd7e14{% else %}#e0284f{% endif %}"
+           title="{{ reg.get_emocion_display }} — {{ reg.fecha|date:'d/m' }}">
+        {{ reg.puntaje }}
+      </div>
+      {% endfor %}
+      <span style="font-size:.72rem;color:var(--muted);margin-left:.25rem">Últimos {{ mis_registros|length }} días</span>
+    </div>
+    <a href="{% url 'emotions:historial' %}" class="btn btn-ghost btn-sm" style="margin-top:.75rem">
+      <i class="bi bi-bar-chart-fill"></i> Ver historial completo
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Calcular progreso total y actualizar display
+const semanas = {{ semanas_list|length }};
+let totalActs = 0, totalResp = 0;
+{% for s in semanas_list %}
+totalActs += {{ s.total }};
+totalResp += {{ s.respondidas }};
+{% endfor %}
+const pctEl = document.getElementById('pct');
+if(totalActs > 0){
+  const pct = Math.round(totalResp / totalActs * 100);
+  pctEl.textContent = pct + '%';
+} else {
+  pctEl.textContent = '0%';
+}
+
+// Toggle semana individual
+function toggleSemana(num){
+  const hdr  = document.querySelector(`#semana-${num} .semana-hdr`);
+  const body = document.querySelector(`#semana-${num} .semana-body`);
+  hdr.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+// Toggle all
+let allOpen = false;
+function toggleAll(){
+  const hdrs  = document.querySelectorAll('.semana-hdr');
+  const bodies= document.querySelectorAll('.semana-body');
+  allOpen = !allOpen;
+  hdrs.forEach(h  => allOpen ? h.classList.add('open')   : h.classList.remove('open'));
+  bodies.forEach(b=> allOpen ? b.classList.add('open')   : b.classList.remove('open'));
+  document.getElementById('toggleBtn').innerHTML = allOpen
+    ? '<i class="bi bi-chevron-contract"></i> Colapsar todo'
+    : '<i class="bi bi-chevron-expand"></i> Expandir todo';
+}
+</script>
+{% endblock %}

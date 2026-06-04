@@ -1,0 +1,418 @@
+{% extends 'base/base.html' %}
+{% load emotion_tags %}
+{% block title %}Mi Diario{% endblock %}
+{% block page_title %}Mi Diario Personal{% endblock %}
+{% block page_subtitle %}Tu espacio privado de reflexión{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ═══════════════════════ BOOK ═══════════════════════ */
+.book-shell{
+  width:100%;max-width:980px;margin:0 auto;
+  display:flex;align-items:stretch;min-height:560px;
+  filter:drop-shadow(0 12px 40px rgba(0,0,0,.18));
+}
+.book{display:flex;width:100%;border-radius:0 18px 18px 0;overflow:hidden;position:relative}
+
+/* spine */
+.book-spine{
+  width:30px;flex-shrink:0;
+  background:linear-gradient(180deg,#5a4fcc 0%,#3d35a0 100%);
+  display:flex;align-items:center;justify-content:center;
+  writing-mode:vertical-rl;font-size:.6rem;font-weight:800;
+  letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.65);
+  box-shadow:inset -3px 0 10px rgba(0,0,0,.3),2px 0 6px rgba(0,0,0,.12);
+}
+body.dark .book-spine{background:linear-gradient(180deg,#3d35a0,#241e6e)}
+
+/* left — index */
+.book-left{
+  width:280px;flex-shrink:0;
+  background:linear-gradient(168deg,#fdfcff 0%,#f3f0ff 100%);
+  border-right:2px solid #ddd9f5;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+body.dark .book-left{
+  background:linear-gradient(168deg,#1e1b35,#171328);
+  border-right-color:#28244a;
+}
+.book-left::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:6px;
+  background:linear-gradient(to right,rgba(0,0,0,.06),transparent);
+  pointer-events:none;
+}
+
+/* right — content */
+.book-right{
+  flex:1;min-width:0;
+  background:#fff;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+  border-radius:0 18px 18px 0;
+}
+body.dark .book-right{background:#18152e}
+
+/* ruled lines on right page */
+.book-right::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:repeating-linear-gradient(
+    transparent 0px,transparent 33px,
+    rgba(124,110,255,.07) 33px,rgba(124,110,255,.07) 34px
+  );
+}
+body.dark .book-right::before{
+  background-image:repeating-linear-gradient(
+    transparent 0px,transparent 33px,
+    rgba(157,143,255,.06) 33px,rgba(157,143,255,.06) 34px
+  );
+}
+
+/* red margin line */
+.book-right::after{
+  content:'';position:absolute;left:52px;top:0;bottom:0;width:1.5px;
+  background:rgba(255,100,100,.18);pointer-events:none;
+}
+
+/* ── Index header ── */
+.idx-header{
+  padding:1.25rem 1.1rem .75rem;
+  border-bottom:1px solid rgba(124,110,255,.12);
+  font-family:'Syne',sans-serif;font-size:.8rem;
+  color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;font-weight:800;
+}
+
+/* ── Index scroll ── */
+.idx-scroll{flex:1;overflow-y:auto;padding:.5rem .6rem}
+.idx-scroll::-webkit-scrollbar{width:3px}
+.idx-scroll::-webkit-scrollbar-thumb{background:rgba(124,110,255,.2);border-radius:2px}
+
+/* ── Index entry ── */
+.idx-entry{
+  display:flex;align-items:flex-start;gap:.65rem;
+  padding:.6rem .65rem;border-radius:10px;
+  cursor:pointer;transition:all .16s;
+  border:1.5px solid transparent;margin-bottom:.2rem;
+  text-decoration:none;color:var(--ink);
+}
+.idx-entry:hover{background:rgba(124,110,255,.07);border-color:rgba(124,110,255,.14)}
+.idx-entry.active{
+  background:rgba(124,110,255,.11);
+  border-color:rgba(124,110,255,.28);
+}
+.idx-emo{font-size:1.35rem;line-height:1;flex-shrink:0;padding-top:.1rem}
+.idx-info{flex:1;min-width:0}
+.idx-title{
+  font-weight:700;font-size:.8rem;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.idx-entry.active .idx-title{color:var(--accent)}
+.idx-date{font-size:.66rem;color:var(--muted);margin-top:.1rem}
+.idx-prev{
+  font-size:.7rem;color:var(--muted);margin-top:.2rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* ── Right page paddings ── */
+.rp-inner{padding:2.5rem 2rem 1.5rem 3.5rem;display:flex;flex-direction:column;height:100%;position:relative;z-index:1}
+
+/* ── Entry display ── */
+.entry-emo-big{font-size:2.2rem;line-height:1;margin-bottom:.6rem}
+.entry-title-big{
+  font-family:'Syne',sans-serif;font-size:1.45rem;
+  color:var(--ink);letter-spacing:-.4px;line-height:1.25;
+  margin-bottom:.55rem;
+}
+.entry-meta-chips{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.entry-body{
+  flex:1;font-size:.92rem;line-height:2.12rem;
+  color:var(--ink);white-space:pre-wrap;word-break:break-word;
+  overflow-y:auto;
+}
+.entry-body::-webkit-scrollbar{width:3px}
+.entry-body::-webkit-scrollbar-thumb{background:rgba(124,110,255,.2);border-radius:2px}
+
+/* ── Bottom bar ── */
+.rp-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-top:.85rem;border-top:1px solid rgba(124,110,255,.1);
+  margin-top:.75rem;position:relative;z-index:1;
+}
+.page-num{font-size:.68rem;color:rgba(124,110,255,.45);font-weight:700;letter-spacing:1px}
+
+/* ── Nav arrows ── */
+.nav-arrow{
+  width:34px;height:34px;border-radius:50%;
+  border:1.5px solid var(--border);background:var(--card);
+  color:var(--muted);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:.85rem;transition:all .16s;
+}
+.nav-arrow:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:rgba(124,110,255,.08)}
+.nav-arrow:disabled{opacity:.2;cursor:default}
+
+/* ── Empty right ── */
+.rp-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:.9rem;color:var(--muted);padding:3rem 2rem;
+  height:100%;position:relative;z-index:1;
+}
+
+/* ── New entry button ── */
+.btn-new{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--grd);color:#fff;font-weight:700;font-size:.83rem;
+  padding:.65rem 1.3rem;border-radius:50px;border:none;cursor:pointer;
+  text-decoration:none;box-shadow:0 4px 16px rgba(124,110,255,.35);
+  transition:all .2s;
+}
+.btn-new:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(124,110,255,.45);color:#fff}
+
+/* ── Top bar ── */
+.diary-topbar{
+  background:var(--grd2);border-radius:var(--r);
+  padding:1.25rem 1.75rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+}
+
+/* ── Search ── */
+.search-bar{
+  display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;
+  padding:.85rem 1.1rem;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--r);
+}
+
+/* ── Delete modal ── */
+.del-modal-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.55);z-index:9999;
+  align-items:center;justify-content:center;
+}
+.del-modal-box{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);width:340px;padding:2rem;text-align:center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:1.1rem">
+
+  <!-- top bar -->
+  <div class="diary-topbar fade-up">
+    <div style="display:flex;align-items:center;gap:.85rem">
+      <span style="font-size:2rem"><i class="bi bi-journal-bookmark-fill"></i></span>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;color:#fff;letter-spacing:-.3px">
+          {{ total }} entrada{% if total != 1 %}s{% endif %} en tu diario
+        </div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.4)">Solo tú puedes ver las entradas privadas</div>
+      </div>
+    </div>
+    <a href="{% url 'emotions:diario_nueva' %}" class="btn-new">
+      <i class="bi bi-plus-circle-fill"></i> Nueva entrada
+    </a>
+  </div>
+
+  <!-- search -->
+  <form method="get" class="search-bar fade-up fade-up-1">
+    <input type="text" name="q" class="field-input" style="flex:1;min-width:150px"
+           placeholder="Buscar en tu diario..." value="{{ q }}">
+    <select name="emocion" class="field-input field-select" style="width:auto" onchange="this.form.submit()">
+      <option value="">Todas las emociones</option>
+      {% for val,label in emociones %}
+      <option value="{{ val }}" {% if filtro_emocion == val %}selected{% endif %}>
+        <i class="bi {{ emojis|get_item:val }}"></i> {{ label }}
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+    {% if q or filtro_emocion %}
+    <a href="{% url 'emotions:diario_lista' %}" class="btn btn-ghost btn-sm"><i class="bi bi-x-lg"></i> Limpiar</a>
+    {% endif %}
+  </form>
+
+  {% if entradas %}
+  <!-- ─── BOOK ─── -->
+  <div class="book-shell fade-up fade-up-2">
+    <div class="book">
+
+      <!-- Spine -->
+      <div class="book-spine">Diario · {{ hoy|date:"Y" }}</div>
+
+      <!-- Left page: index -->
+      <div class="book-left">
+        <div class="idx-header"><i class="bi bi-card-list"></i> &nbsp;Índice</div>
+        <div class="idx-scroll" id="idxScroll">
+          {% for e in entradas %}
+          <div class="idx-entry {% if forloop.first %}active{% endif %}"
+               data-idx="{{ forloop.counter0 }}"
+               onclick="openEntry({{ forloop.counter0 }})">
+            <div class="idx-emo">
+              {% if e.emocion_del_dia %}<i class="bi {{ emojis|get_item:e.emocion_del_dia }}"></i>{% else %}<i class="bi bi-pencil-square"></i>{% endif %}
+            </div>
+            <div class="idx-info">
+              <div class="idx-title">{{ e.titulo|default:"Sin título" }}</div>
+              <div class="idx-date">{{ e.created_at|date:"d/m/Y" }}</div>
+              <div class="idx-prev">{{ e.get_resumen }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div style="padding:.65rem .9rem;border-top:1px solid rgba(124,110,255,.1)">
+          <a href="{% url 'emotions:diario_nueva' %}" class="btn-new" style="width:100%;justify-content:center;font-size:.78rem;padding:.55rem">
+            <i class="bi bi-plus-circle-fill"></i> Escribir nueva entrada
+          </a>
+        </div>
+      </div>
+
+      <!-- Right page: content -->
+      <div class="book-right">
+        <div class="rp-inner" id="rpInner">
+          <!-- filled by JS -->
+          <div class="rp-empty" id="rpEmpty" style="display:none">
+            <div style="font-size:3.5rem;opacity:.35"><i class="bi bi-book-fill"></i></div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.1rem;color:var(--ink)">Selecciona una entrada</div>
+            <div style="font-size:.85rem">Toca cualquier entrada del índice para leerla aquí</div>
+          </div>
+
+          <div id="rpContent">
+            <div class="entry-emo-big" id="eEmo"></div>
+            <div class="entry-title-big" id="eTitle"></div>
+            <div class="entry-meta-chips" id="eMeta"></div>
+            <div class="entry-body" id="eBody"></div>
+          </div>
+
+          <div class="rp-bottom">
+            <button class="nav-arrow" id="prevBtn" onclick="prevEntry()" title="Anterior ←">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <div style="display:flex;gap:.45rem;align-items:center" id="rpActions"></div>
+            <button class="nav-arrow" id="nextBtn" onclick="nextEntry()" title="Siguiente →">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+          <div class="page-num" style="position:absolute;bottom:.9rem;right:1.5rem" id="pageNum"></div>
+        </div>
+      </div>
+
+    </div><!-- .book -->
+  </div><!-- .book-shell -->
+
+  {% else %}
+  <!-- Empty book -->
+  <div class="book-shell fade-up fade-up-2">
+    <div class="book">
+      <div class="book-spine">Diario</div>
+      <div class="book-left">
+        <div class="idx-header"><i class="bi bi-card-list"></i> &nbsp;Índice</div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.83rem;padding:1rem">
+          Sin entradas aún
+        </div>
+      </div>
+      <div class="book-right">
+        <div class="rp-empty" style="display:flex">
+          <div style="font-size:3.5rem;opacity:.3"><i class="bi bi-journal-bookmark-fill"></i></div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.2rem;color:var(--ink)">Tu diario está vacío</div>
+          <div style="font-size:.88rem">Este es tu espacio privado y seguro para escribir</div>
+          <a href="{% url 'emotions:diario_nueva' %}" class="btn-new" style="margin-top:.5rem">
+            <i class="bi bi-plus-circle-fill"></i> Escribir primera entrada
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Delete modal -->
+<div class="del-modal-bg" id="delModalBg">
+  <div class="del-modal-box">
+    <div style="font-size:2.5rem;margin-bottom:.75rem"><i class="bi bi-trash-fill"></i>️</div>
+    <div style="font-weight:700;font-size:1rem;color:var(--ink);margin-bottom:.4rem">¿Eliminar esta entrada?</div>
+    <div style="font-size:.83rem;color:var(--muted);margin-bottom:1.4rem">Esta acción no se puede deshacer.</div>
+    <form id="delForm" method="post">
+      {% csrf_token %}
+      <div style="display:flex;gap:.65rem">
+        <button type="button" class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeDelModal()">Cancelar</button>
+        <button type="submit" class="btn btn-danger" style="flex:1;justify-content:center">Eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if entradas %}
+const ENTRIES = {{ entries_json|safe }};
+let cur = 0;
+
+function openEntry(idx){
+  if(idx < 0 || idx >= ENTRIES.length) return;
+  cur = idx;
+  const e = ENTRIES[idx];
+
+  // update index highlight
+  document.querySelectorAll('.idx-entry').forEach(el=>{
+    el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
+  });
+
+  // fill content
+  document.getElementById('eEmo').innerHTML  = e.emo ? `<i class="bi ${e.emo}" style="color:${e.emoColor}"></i>` : '';
+  document.getElementById('eTitle').textContent = e.title;
+  document.getElementById('eBody').textContent  = e.content;
+
+  document.getElementById('eMeta').innerHTML = `
+    <span style="font-size:.75rem;color:var(--muted)">${e.dateShort}</span>
+    ${e.emoLabel ? `<span class="chip chip-dark" style="font-size:.68rem"><i class="bi ${e.emo}"></i> ${e.emoLabel}</span>` : ''}
+    ${e.private
+      ? '<span class="chip chip-dark" style="font-size:.68rem"><i class="bi bi-lock-fill"></i> Privado</span>'
+      : '<span class="chip chip-info" style="font-size:.68rem"><i class="bi bi-eye-fill"></i> Visible</span>'}
+  `;
+
+  document.getElementById('rpActions').innerHTML = `
+    <a href="${e.editUrl}" class="btn btn-ghost btn-sm"><i class="bi bi-pencil"></i> Editar</a>
+    <button class="btn btn-danger btn-sm" onclick="openDelModal('${e.delUrl}')">
+      <i class="bi bi-trash"></i>
+    </button>
+  `;
+
+  document.getElementById('pageNum').textContent = `${idx+1} / ${ENTRIES.length}`;
+
+  document.getElementById('prevBtn').disabled = idx === 0;
+  document.getElementById('nextBtn').disabled = idx === ENTRIES.length - 1;
+
+  // scroll index item into view
+  const idxEl = document.querySelector(`.idx-entry[data-idx="${idx}"]`);
+  if(idxEl) idxEl.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+
+function prevEntry(){ openEntry(cur - 1); }
+function nextEntry(){ openEntry(cur + 1); }
+
+// keyboard
+document.addEventListener('keydown', e=>{
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if(e.key === 'ArrowLeft')  prevEntry();
+  if(e.key === 'ArrowRight') nextEntry();
+});
+
+function openDelModal(url){
+  document.getElementById('delForm').action = url;
+  document.getElementById('delModalBg').style.display = 'flex';
+}
+function closeDelModal(){
+  document.getElementById('delModalBg').style.display = 'none';
+}
+document.getElementById('delModalBg').addEventListener('click', function(e){
+  if(e.target === this) closeDelModal();
+});
+
+// init
+openEntry(0);
+{% endif %}
+</script>
+{% endblock %}

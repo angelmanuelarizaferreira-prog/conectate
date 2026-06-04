@@ -1,0 +1,33 @@
+{% extends 'base/base.html' %}
+{% block title %}Editar Actividad{% endblock %}
+{% block page_title %}Editar Actividad{% endblock %}
+{% block page_subtitle %}{{ actividad.titulo }}{% endblock %}
+{% block content %}
+<div style="max-width:580px;margin:0 auto">
+  <div class="card fade-up" style="padding:2rem">
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div><label class="field-label">T&iacute;tulo *</label><input type="text" name="titulo" class="field-input" value="{{ actividad.titulo }}" required></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+          <div><label class="field-label">Tipo *</label><select name="tipo" class="field-input field-select">{% for v,l in tipos %}<option value="{{ v }}" {% if actividad.tipo == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+          <div><label class="field-label">Curso</label><select name="curso" class="field-input field-select"><option value="">— Sin curso —</option>{% for c in cursos %}<option value="{{ c.pk }}" {% if actividad.curso and actividad.curso.pk == c.pk %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}</select></div>
+          <div><label class="field-label">Semana *</label><select name="semana" class="field-input field-select">{% for s in semana_range %}<option value="{{ s }}" {% if actividad.semana == s %}selected{% endif %}>Semana {{ s }}</option>{% endfor %}</select></div>
+        </div>
+        <div><label class="field-label">Descripci&oacute;n *</label><textarea name="descripcion" class="field-input" style="resize:vertical;min-height:120px;border-radius:var(--r2);width:100%" rows="4" required>{{ actividad.descripcion }}</textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;align-items:end">
+          <div><label class="field-label">Fecha l&iacute;mite</label><input type="date" name="fecha_limite" class="field-input" value="{{ actividad.fecha_limite|date:'Y-m-d'|default:'' }}"></div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem;background:var(--surface);border-radius:var(--r2)">
+            <input type="checkbox" name="activa" id="actCk" {% if actividad.activa %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--accent)">
+            <label for="actCk" style="font-size:.85rem;font-weight:600;cursor:pointer">Activa</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:.5rem">
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center">Guardar</button>
+          <a href="{% url 'gestion:actividades' %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

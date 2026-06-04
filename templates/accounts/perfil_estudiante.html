@@ -1,0 +1,217 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ estudiante.get_full_name }}{% endblock %}
+{% block page_title %}{{ estudiante.get_full_name }}{% endblock %}
+{% block page_subtitle %}Perfil emocional del estudiante{% endblock %}
+{% block extra_css %}
+<style>
+.profile-hero{
+  background:var(--grd2);border-radius:var(--r);padding:2rem;
+  position:relative;overflow:hidden;
+}
+.ph-orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.2;pointer-events:none}
+.ph-ava{
+  width:64px;height:64px;border-radius:18px;
+  background:var(--grd);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;
+  flex-shrink:0;box-shadow:0 8px 24px rgba(124,110,255,.35);
+}
+.note-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r2);padding:.85rem;margin-bottom:.5rem;
+}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:300px 1fr;gap:1.25rem;align-items:start">
+
+  <!-- Columna izquierda -->
+  <div style="display:flex;flex-direction:column;gap:1rem">
+
+    <!-- Info card -->
+    <div class="card fade-up">
+      <div class="profile-hero" style="border-radius:var(--r) var(--r) 0 0">
+        <div class="ph-orb" style="width:200px;height:200px;background:#7c6eff;top:-80px;right:-80px"></div>
+        <div class="ph-orb" style="width:150px;height:150px;background:#ff6b9d;bottom:-60px;left:-40px"></div>
+        <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.75rem">
+          <div class="ph-ava">{{ estudiante.first_name|first|upper }}{{ estudiante.last_name|first|upper }}</div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.1rem;color:#fff;letter-spacing:-.3px">{{ estudiante.get_full_name }}</div>
+            <div style="font-size:.75rem;color:rgba(255,255,255,.45);margin-top:2px">@{{ estudiante.username }}</div>
+          </div>
+          {% if alertas %}
+          {% for a in alertas %}<span class="chip chip-danger"><i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i> {{ a.get_tipo_display }}</span>{% endfor %}
+          {% else %}
+          <span class="chip chip-success"><i class="bi bi-check-circle-fill" style="color:#28a745"></i> Sin alertas</span>
+          {% endif %}
+        </div>
+      </div>
+      <div style="padding:1rem">
+        {% if estudiante.email %}
+        <div style="font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+          <i class="bi bi-envelope"></i>{{ estudiante.email }}
+        </div>
+        {% endif %}
+        <div style="font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:.4rem">Cursos:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+          {% for insc in cursos %}
+          <span class="chip chip-info">{{ insc.curso.nombre }}</span>
+          {% empty %}<span style="font-size:.78rem;color:var(--muted)">Sin cursos</span>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.65rem" class="fade-up fade-up-1">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:.85rem;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:1.5rem;color:var(--accent)">{{ total_registros }}</div>
+        <div style="font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Registros</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:.85rem;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:1.5rem;color:var(--accent)">{{ promedio_general|default:"—" }}</div>
+        <div style="font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Promedio</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:.85rem;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:1.5rem;color:var(--accent)">{{ racha }}</div>
+        <div style="font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Racha <i class="bi bi-fire"></i></div>
+      </div>
+    </div>
+
+    <!-- Notas privadas -->
+    <div class="card fade-up fade-up-2">
+      <div class="card-hd">
+        <span class="card-hd-title"><i class="bi bi-pencil-square"></i> Notas privadas</span>
+        <button class="btn btn-ghost btn-xs" onclick="document.getElementById('notaForm').classList.toggle('d-none')">
+          <i class="bi bi-plus"></i>
+        </button>
+      </div>
+
+      <div id="notaForm" style="display:none" style="padding:.75rem;border-bottom:1px solid var(--border)">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="nota_id" id="notaIdIn" value="">
+          <textarea name="nota_contenido" id="notaContIn" class="field-input" style="border-radius:var(--r2);resize:vertical;min-height:80px;width:100%" rows="3" placeholder="Escribe una nota sobre este estudiante..."></textarea>
+          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:.5rem;width:100%;justify-content:center">Guardar nota</button>
+        </form>
+      </div>
+
+      <div style="padding:.75rem;max-height:260px;overflow-y:auto">
+        {% for nota in notas %}
+        <div class="note-card">
+          <div style="font-size:.83rem;white-space:pre-wrap;color:var(--ink)">{{ nota.contenido }}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.6rem">
+            <span style="font-size:.68rem;color:var(--muted)">{{ nota.created_at|date:"d/m/Y H:i" }}</span>
+            <div style="display:flex;gap:.35rem">
+              <button class="btn btn-ghost btn-xs" onclick="editNota('{{ nota.pk }}',`{{ nota.contenido|escapejs }}`)"><i class="bi bi-pencil-fill"></i></button>
+              <form method="post" style="display:inline" onsubmit="return confirm('&iquest;Eliminar?')">
+                {% csrf_token %}
+                <input type="hidden" name="eliminar_nota" value="{{ nota.pk }}">
+                <button type="submit" class="btn btn-danger btn-xs"><i class="bi bi-trash-fill"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem">Sin notas a&uacute;n</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Columna derecha -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <!-- Grafica -->
+    <div class="card fade-up">
+      <div class="card-hd"><span class="card-hd-title"><i class="bi bi-graph-up-arrow"></i> Evoluci&oacute;n &mdash; &uacute;ltimos 30 d&iacute;as</span></div>
+      <div style="padding:1.25rem;padding-top:.75rem"><canvas id="gEvo" height="90"></canvas></div>
+    </div>
+
+    <!-- Tabs: historial y alertas -->
+    <div class="card fade-up fade-up-1">
+      <div class="ntabs" style="padding:0 0 0 1rem">
+        <button class="ntab active" onclick="switchTab('historial',this)"><i class="bi bi-clipboard2-fill"></i> Historial ({{ registros|length }})</button>
+        <button class="ntab" onclick="switchTab('alertas',this)"><i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i> Alertas ({{ alertas.count }})</button>
+      </div>
+
+      <div id="tab-historial" class="tab-panel active">
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr>
+              <th style="padding-left:1.5rem">Fecha</th>
+              <th>Emoci&oacute;n</th><th>Puntaje</th><th>Comentario</th>
+            </tr></thead>
+            <tbody>
+              {% for reg in registros %}
+              <tr>
+                <td style="padding-left:1.5rem">
+                  <div style="font-weight:600;font-size:.83rem">{{ reg.fecha|date:"d/m/Y" }}</div>
+                  <div style="font-size:.72rem;color:var(--muted)">{{ reg.fecha|date:"l" }}</div>
+                </td>
+                <td><span class="chip chip-{{ reg.emocion }}"><i class="bi {{ reg.get_emoji }}"></i> {{ reg.get_emocion_display }}</span></td>
+                <td>
+                  <div class="pdots p{{ reg.puntaje }}">
+                    {% for i in "12345" %}<div class="pdot {% if forloop.counter <= reg.puntaje %}on{% endif %}"></div>{% endfor %}
+                  </div>
+                </td>
+                <td style="color:var(--muted);font-style:italic;max-width:220px">{{ reg.comentario|truncatechars:50|default:"—" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" style="text-align:center;padding:2.5rem;color:var(--muted)">Sin registros</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-alertas" class="tab-panel">
+        {% for a in alertas %}
+        <div style="display:flex;align-items:flex-start;gap:.85rem;padding:1rem;border-bottom:1px solid var(--border);background:{% if a.prioridad == 'alta' %}rgba(224,40,79,.03){% else %}rgba(245,184,0,.03){% endif %}">
+          <div style="font-size:1.4rem">{% if a.prioridad == 'alta' %}<i class="bi bi-circle-fill" style="color:#e0284f"></i>{% else %}<i class="bi bi-circle-fill" style="color:#f5b800"></i>{% endif %}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:.85rem">{{ a.get_tipo_display }}</div>
+            <div style="font-size:.8rem;color:var(--muted)">{{ a.mensaje }}</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:.25rem">{{ a.fecha_creacion|date:"d/m/Y H:i" }}</div>
+          </div>
+          <a href="{% url 'emotions:alertas' %}" class="btn btn-ghost btn-sm">Resolver</a>
+        </div>
+        {% empty %}
+        <div style="padding:3rem;text-align:center">
+          <div style="font-size:2.5rem;margin-bottom:.75rem"><i class="bi bi-check-circle-fill" style="color:#28a745"></i></div>
+          <div style="color:var(--muted);font-size:.85rem">Sin alertas activas para este estudiante</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('gEvo').getContext('2d'),{
+  type:'line',
+  data:{
+    labels:{{ fechas_json|safe }},
+    datasets:[{data:{{ puntajes_json|safe }},borderColor:'#7c6eff',backgroundColor:'rgba(124,110,255,.07)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#7c6eff',spanGaps:true,borderWidth:2.5}]
+  },
+  options:{responsive:true,scales:{y:{min:0,max:5,ticks:{stepSize:1,font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{maxTicksLimit:10,font:{size:10}},grid:{display:false}}},plugins:{legend:{display:false}}}
+});
+
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+function editNota(id,content){
+  document.getElementById('notaIdIn').value=id;
+  document.getElementById('notaContIn').value=content;
+  document.getElementById('notaForm').classList.remove('d-none');
+}
+</script>
+{% endblock %}

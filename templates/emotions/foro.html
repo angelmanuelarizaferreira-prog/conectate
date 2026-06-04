@@ -1,0 +1,161 @@
+{% extends 'base/base.html' %}
+{% block title %}Foro &mdash; {{ curso.nombre }}{% endblock %}
+{% block page_title %}Foro de {{ curso.nombre }}{% endblock %}
+{% block page_subtitle %}Comparte c&oacute;mo te sientes con tu grupo de forma segura{% endblock %}
+{% block extra_css %}
+<style>
+.post-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem 1.5rem;
+  transition:all .18s;
+}
+.post-card:hover{box-shadow:var(--shadow);border-color:rgba(124,110,255,.2)}
+.apoyo-btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.3rem .85rem;border-radius:50px;
+  border:1.5px solid var(--border);
+  background:transparent;font-size:.8rem;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:all .18s;
+}
+.apoyo-btn:hover,.apoyo-btn.apoyado{
+  background:rgba(255,107,157,.08);
+  border-color:rgba(255,107,157,.4);color:#ff6b9d;
+}
+.anon-badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:2px 9px;border-radius:50px;
+  font-size:.67rem;font-weight:700;
+  background:rgba(136,132,168,.12);color:var(--muted);
+}
+.post-ava{
+  width:38px;height:38px;border-radius:11px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:700;color:#fff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Aviso de seguridad -->
+  <div class="card fade-up" style="border-left:4px solid var(--accent);background:rgba(124,110,255,.04);padding:1rem 1.5rem">
+    <div style="display:flex;align-items:center;gap:.85rem">
+      <span style="font-size:1.4rem"><i class="bi bi-heart-fill" style="color:#7c6eff"></i></span>
+      <div style="font-size:.85rem;color:var(--ink);line-height:1.6">
+        <strong>Espacio seguro:</strong> Puedes compartir c&oacute;mo te sientes de forma
+        <strong>an&oacute;nima</strong>. Los profesores pueden leer los posts pero
+        <strong>no ver&aacute;n tu nombre</strong> si eliges la opci&oacute;n an&oacute;nima.
+        Trata a todos con respeto.
+      </div>
+    </div>
+  </div>
+
+  <!-- Nuevo post (solo estudiantes) -->
+  {% if not es_profesor %}
+  <div class="card fade-up fade-up-1" style="padding:1.5rem">
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:1rem"><i class="bi bi-pencil-fill"></i> Compartir con el grupo</div>
+    <form method="post" id="foroForm">
+      {% csrf_token %}
+      <textarea name="contenido" id="foroTextarea" class="field-input"
+        style="resize:none;border-radius:var(--r2);min-height:100px;width:100%;margin-bottom:.85rem"
+        rows="3" maxlength="500"
+        placeholder="&iquest;C&oacute;mo te sientes hoy? &iquest;Algo que quieras compartir con tu clase?"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;font-weight:600">
+            <input type="checkbox" name="anonimo" checked id="anonCheck"
+              style="width:16px;height:16px;accent-color:var(--accent)">
+            Publicar de forma an&oacute;nima
+          </label>
+          <span style="font-size:.72rem;color:var(--muted)" id="charCount">0/500</span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="bi bi-send-fill"></i> Publicar
+        </button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div class="card fade-up fade-up-1" style="padding:1rem 1.5rem;background:rgba(124,110,255,.04);border-color:rgba(124,110,255,.15)">
+    <div style="font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.65rem">
+      <i class="bi bi-eye-fill" style="color:var(--accent)"></i>
+      Est&aacute;s en modo <strong>observador</strong>. Los profesores pueden leer todos los posts
+      pero los posts an&oacute;nimos no muestran el nombre del autor.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Posts -->
+  <div style="display:flex;flex-direction:column;gap:.85rem" class="fade-up fade-up-2">
+    {% for post in posts %}
+    <div class="post-card" id="post-{{ post.pk }}">
+      <div style="display:flex;align-items:flex-start;gap:.85rem">
+        <div class="post-ava" style="background:{% if post.anonimo %}rgba(136,132,168,.3){% else %}var(--grd){% endif %}">
+          {% if post.anonimo %}<i class="bi bi-question-circle-fill"></i>{% else %}{{ post.autor.first_name|first|upper }}{{ post.autor.last_name|first|upper }}{% endif %}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;flex-wrap:wrap">
+            <span style="font-weight:700;font-size:.85rem">
+              {% if post.anonimo and es_profesor %}
+                Estudiante an&oacute;nimo
+              {% elif post.anonimo %}
+                {% if post.autor == request.user %}T&uacute; (an&oacute;nimo){% else %}Estudiante an&oacute;nimo{% endif %}
+              {% else %}
+                {{ post.nombre_mostrar }}
+              {% endif %}
+            </span>
+            {% if post.anonimo %}<span class="anon-badge"><i class="bi bi-incognito"></i> An&oacute;nimo</span>{% endif %}
+            <span style="font-size:.72rem;color:var(--muted)">{{ post.created_at|timesince }} atr&aacute;s</span>
+          </div>
+          <div style="font-size:.9rem;line-height:1.7;color:var(--ink);white-space:pre-wrap">{{ post.contenido }}</div>
+          <div style="margin-top:.85rem;display:flex;align-items:center;gap:.65rem">
+            <button class="apoyo-btn {% if request.user in post.apoyos.all %}apoyado{% endif %}"
+              onclick="toggleApoyo({{ post.pk }}, this)">
+              <i class="bi bi-heart-fill" style="color:#e0284f"></i> <span class="n-apoyos">{{ post.total_apoyos }}</span> apoyo{{ post.total_apoyos|pluralize:"s" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty fade-up">
+      <span class="empty-ico"><i class="bi bi-chat-dots-fill"></i></span>
+      <div class="empty-title">El foro est&aacute; vac&iacute;o</div>
+      <div class="empty-sub">S&eacute; el primero en compartir c&oacute;mo te sientes.</div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = "{{ csrf_token }}";
+
+// Contador de caracteres
+const ta = document.getElementById('foroTextarea');
+if(ta){
+  ta.addEventListener('input', () => {
+    document.getElementById('charCount').textContent = ta.value.length + '/500';
+  });
+}
+
+// Toggle apoyo
+async function toggleApoyo(postId, btn){
+  try{
+    const r = await fetch('/emotions/foro/apoyo/' + postId + '/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' }
+    });
+    const d = await r.json();
+    btn.classList.toggle('apoyado', d.apoyado);
+    btn.querySelector('.n-apoyos').textContent = d.total;
+    const suf = d.total === 1 ? '' : 's';
+    btn.innerHTML = '<i class="bi bi-heart-fill" style="color:#e0284f"></i> <span class="n-apoyos">' + d.total + '</span> apoyo' + suf;
+    btn.classList.toggle('apoyado', d.apoyado);
+  } catch(e){ console.error(e); }
+}
+</script>
+{% endblock %}

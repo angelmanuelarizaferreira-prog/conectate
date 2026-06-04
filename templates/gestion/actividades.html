@@ -1,0 +1,38 @@
+{% extends 'base/base.html' %}
+{% block title %}Actividades{% endblock %}
+{% block page_title %}Gesti&oacute;n de Actividades{% endblock %}
+{% block page_subtitle %}Administra las actividades del sistema{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+  <div style="display:flex;justify-content:space-between;align-items:center" class="fade-up">
+    <span style="font-size:.82rem;color:var(--muted)">{{ actividades.count }} actividad(es)</span>
+    <a href="{% url 'activities:crear' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus"></i> Nueva actividad</a>
+  </div>
+  <div class="card fade-up fade-up-1">
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th style="padding-left:1.5rem">Actividad</th><th>Tipo</th><th>Curso</th><th>Creada por</th><th>Respuestas</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for act in actividades %}
+          <tr>
+            <td style="padding-left:1.5rem;font-weight:600;font-size:.83rem">{{ act.titulo }}</td>
+            <td><span style="font-size:.85rem">{{ act.get_tipo_emoji }}</span> <span style="font-size:.8rem;color:var(--muted)">{{ act.get_tipo_display }}</span></td>
+            <td style="color:var(--muted);font-size:.8rem">{{ act.curso.nombre|default:"—" }}</td>
+            <td style="color:var(--muted);font-size:.8rem">{{ act.creada_por.get_full_name }}</td>
+            <td><span class="chip chip-info">{{ act.total_respuestas }}</span></td>
+            <td><span class="chip {% if act.activa %}chip-success{% else %}chip-dark{% endif %}">{% if act.activa %}Activa{% else %}Inactiva{% endif %}</span></td>
+            <td>
+              <div style="display:flex;gap:.35rem">
+                <a href="{% url 'activities:detalle' act.pk %}" class="btn btn-ghost btn-xs"><i class="bi bi-eye-fill"></i></a>
+                <a href="{% url 'gestion:editar_actividad' act.pk %}" class="btn btn-ghost btn-xs"><i class="bi bi-pencil-fill"></i></a>
+                <form method="post" action="{% url 'gestion:eliminar_actividad' act.pk %}" style="display:inline" onsubmit="return confirm('&iquest;Eliminar?')">{% csrf_token %}<button type="submit" class="btn btn-danger btn-xs"><i class="bi bi-trash-fill"></i></button></form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--muted)">Sin actividades</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

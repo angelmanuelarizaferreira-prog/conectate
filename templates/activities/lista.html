@@ -1,0 +1,46 @@
+{% extends 'base/base.html' %}
+{% block title %}Actividades{% endblock %}
+{% block page_title %}Actividades{% endblock %}
+{% block page_subtitle %}{% if user.es_estudiante %}Actividades de tus cursos{% else %}Actividades creadas{% endif %}{% endblock %}
+{% block extra_css %}
+<style>
+.act-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;transition:all .2s;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:.75rem}
+.act-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:rgba(124,110,255,.25);color:var(--ink)}
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+  <div style="display:flex;justify-content:space-between;align-items:center" class="fade-up">
+    <span style="font-size:.82rem;color:var(--muted)">{{ actividades.count }} actividad(es)</span>
+    {% if not user.es_estudiante %}<a href="{% url 'activities:crear' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Nueva actividad</a>{% endif %}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem" class="fade-up fade-up-1">
+    {% for act in actividades %}
+    <a href="{% url 'activities:detalle' act.pk %}" class="act-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(124,110,255,.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--accent);flex-shrink:0"><i class="{{ act.get_tipo_icono }}"></i></div>
+        {% if user.es_estudiante %}
+          {% if act.pk in ids_respondidas %}<span class="chip chip-success"><i class="bi bi-check-circle-fill" style="color:#28a745"></i> Completada</span>
+          {% else %}<span class="chip chip-warn">Pendiente</span>{% endif %}
+        {% else %}<span class="chip chip-info">{{ act.total_respuestas }} resp.</span>{% endif %}
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.25rem">{{ act.titulo }}</div>
+        <div style="font-size:.78rem;color:var(--muted)">{{ act.get_tipo_display }}{% if act.curso %} &bull; {{ act.curso.nombre }}{% endif %}</div>
+      </div>
+      <div style="font-size:.8rem;color:var(--muted);line-height:1.5">{{ act.descripcion|truncatechars:90 }}</div>
+      {% if act.fecha_limite %}<div style="font-size:.75rem;color:var(--muted)"><i class="bi bi-calendar"></i> {{ act.fecha_limite|date:"d/m/Y" }}</div>{% endif %}
+      <div style="margin-top:auto;padding-top:.5rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--accent);font-weight:600">
+        {% if user.es_estudiante %}{% if act.pk in ids_respondidas %}Ver respuesta{% else %}Responder →{% endif %}{% else %}Ver respuestas →{% endif %}
+      </div>
+    </a>
+    {% empty %}
+    <div class="empty" style="grid-column:1/-1">
+      <span class="empty-ico"><i class="bi bi-clipboard2-fill"></i></span>
+      <div class="empty-title">Sin actividades</div>
+      {% if not user.es_estudiante %}<a href="{% url 'activities:crear' %}" class="btn btn-primary" style="margin-top:1rem">Crear primera actividad</a>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

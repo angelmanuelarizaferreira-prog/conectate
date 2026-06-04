@@ -1,0 +1,107 @@
+{% extends 'base/base.html' %}
+{% block title %}Mis Logros{% endblock %}
+{% block page_title %}Mis Logros{% endblock %}
+{% block page_subtitle %}Tu progreso en bienestar emocional{% endblock %}
+{% block extra_css %}
+<style>
+.xp-bar-wrap{background:rgba(255,255,255,.12);border-radius:50px;height:10px;overflow:hidden;margin:.5rem 0}
+.xp-bar-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#00d4aa,#7c6eff);transition:width 1.2s ease}
+.logro-card{
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);
+  padding:1.25rem;display:flex;align-items:center;gap:1rem;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+.logro-card.obtenido{border-color:rgba(124,110,255,.3);background:linear-gradient(135deg,rgba(124,110,255,.04),rgba(255,107,157,.03))}
+.logro-card.bloqueado{opacity:.5;filter:grayscale(.7)}
+.logro-card.obtenido::after{
+  content:'';position:absolute;top:0;right:0;
+  width:3px;height:100%;background:var(--grd);
+}
+.logro-ico{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.7rem;flex-shrink:0;
+}
+.logro-ico.obtenido{background:linear-gradient(135deg,rgba(124,110,255,.15),rgba(255,107,157,.1))}
+.logro-ico.bloqueado{background:var(--surface)}
+.xp-tag{
+  display:inline-flex;align-items:center;gap:.25rem;
+  font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:50px;
+  background:rgba(124,110,255,.1);color:var(--accent);
+}
+.nivel-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--grd);color:#fff;
+  border-radius:50px;padding:.4rem 1rem;
+  font-weight:700;font-size:.85rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+
+  <!-- Hero XP -->
+  <div class="card fade-up" style="background:var(--grd2);border:none;padding:2rem;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:#7c6eff;filter:blur(70px);opacity:.25"></div>
+    <div style="position:absolute;bottom:-40px;left:60px;width:140px;height:140px;border-radius:50%;background:#ff6b9d;filter:blur(60px);opacity:.2"></div>
+    <div style="position:relative;z-index:1">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.5rem;color:#fff;letter-spacing:-.5px;margin-bottom:.3rem">Tu Progreso</div>
+          <div class="nivel-badge"><i class="bi bi-star-fill" style="color:#ffb340"></i> Nivel {{ nivel }}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Syne',sans-serif;font-size:2rem;color:#fff;line-height:1">{{ xp_total }} XP</div>
+          <div style="font-size:.78rem;color:rgba(255,255,255,.45)">de {{ xp_maximo }} XP posibles</div>
+        </div>
+      </div>
+      <div style="margin-bottom:.4rem;display:flex;justify-content:space-between">
+        <span style="font-size:.75rem;color:rgba(255,255,255,.5)">Nivel {{ nivel }}</span>
+        <span style="font-size:.75rem;color:rgba(255,255,255,.5)">{{ progreso_nivel }}/100 XP</span>
+      </div>
+      <div class="xp-bar-wrap">
+        <div class="xp-bar-fill" style="width:{{ progreso_nivel }}%"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem;flex-wrap:wrap;gap:.5rem">
+        <div style="font-size:.85rem;color:rgba(255,255,255,.6)">
+          {{ logros_count }} de {{ total_logros }} logros desbloqueados
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <a href="{% url 'emotions:capsulas' %}" class="btn btn-sm" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.15)">
+            <i class="bi bi-lightning-fill"></i> C&aacute;psulas de bienestar
+          </a>
+          <a href="{% url 'emotions:mapa_calor' %}" class="btn btn-sm" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.15)">
+            <i class="bi bi-calendar3"></i> Mapa de calor
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid de logros -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem" class="fade-up fade-up-1">
+    {% for logro in catalogo %}
+    <div class="logro-card {% if logro.obtenido %}obtenido{% else %}bloqueado{% endif %}">
+      <div class="logro-ico {% if logro.obtenido %}obtenido{% else %}bloqueado{% endif %}">
+        <i class="bi {{ logro.emoji }}" style="font-size:1.6rem"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+          {{ logro.nombre }}
+          {% if not logro.obtenido %}<span style="font-size:.75rem"><i class="bi bi-lock-fill"></i></span>{% endif %}
+        </div>
+        <div style="font-size:.77rem;color:var(--muted);margin-bottom:.4rem">{{ logro.desc }}</div>
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+          <span class="xp-tag">+{{ logro.xp }} XP</span>
+          {% if logro.obtenido %}
+          <span style="font-size:.68rem;color:var(--muted)">{{ logro.fecha|date:"d/m/Y" }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
