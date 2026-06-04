@@ -109,4 +109,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-CSRF_TRUSTED_ORIGINS = ['https://conectate.up.railway.app']
+CSRF_TRUSTED_ORIGINS = [
+    'https://conectate-production.up.railway.app',
+    'https://*.railway.app',
+]
