@@ -130,18 +130,22 @@ def chat_sesion(request, pk):
         ).first()
 
         if reg_hoy:
-            emoji = EMOCION_EMOJIS.get(reg_hoy.emocion, '')
+            EMOJIS_TEXTO = {
+                'feliz': '😊', 'tranquilo': '😌', 'estresado': '😰',
+                'triste': '😢', 'enojado': '😠',
+            }
+            emoji = EMOJIS_TEXTO.get(reg_hoy.emocion, '')
             saludo = (
-                f"Hola {request.user.first_name or 'amigo/a'}!  Vi que hoy te sientes "
+                f"Hola {request.user.first_name or 'amigo/a'}! Vi que hoy te sientes "
                 f"{emoji} {reg_hoy.get_emocion_display().lower()}. "
-                f"Estoy aqui para escucharte. "
-                f"Cuentame, &iquest;como ha sido tu dia?"
+                f"Estoy aquí para escucharte. "
+                f"Cuéntame, ¿cómo ha sido tu día?"
             )
         else:
             saludo = (
-                f"Hola {request.user.first_name or 'amigo/a'}!  Soy Luna, tu asistente "
-                f"de apoyo emocional. Este es tu espacio seguro para hablar de como te sientes. "
-                f"&iquest;Que tienes en mente hoy?"
+                f"Hola {request.user.first_name or 'amigo/a'}! 💜 Soy Luna, tu asistente "
+                f"de apoyo emocional. Este es tu espacio seguro para hablar de cómo te sientes. "
+                f"¿Qué tienes en mente hoy?"
             )
 
         MensajeChat.objects.create(
@@ -259,16 +263,20 @@ def chat_widget_session(request):
             estudiante=request.user, fecha=date.today()
         ).first()
         if reg_hoy:
-            emoji = EMOCION_EMOJIS.get(reg_hoy.emocion, '')
+            EMOJIS_TEXTO = {
+                'feliz': '😊', 'tranquilo': '😌', 'estresado': '😰',
+                'triste': '😢', 'enojado': '😠',
+            }
+            emoji = EMOJIS_TEXTO.get(reg_hoy.emocion, '')
             saludo = (
-                f"Hola {request.user.first_name or 'amigo/a'}!  Vi que hoy te sientes "
+                f"Hola {request.user.first_name or 'amigo/a'}! Vi que hoy te sientes "
                 f"{emoji} {reg_hoy.get_emocion_display().lower()}. "
-                f"Estoy aqui para escucharte. ¿Como ha sido tu dia?"
+                f"Estoy aquí para escucharte. ¿Cómo ha sido tu día?"
             )
         else:
             saludo = (
-                f"Hola {request.user.first_name or 'amigo/a'}!  Soy Luna, tu asistente "
-                f"de apoyo emocional. ¿Que tienes en mente hoy?"
+                f"Hola {request.user.first_name or 'amigo/a'}! 💜 Soy Luna, tu asistente "
+                f"de apoyo emocional. ¿Qué tienes en mente hoy?"
             )
         MensajeChat.objects.create(sesion=sesion, rol='assistant', contenido=saludo)
 
