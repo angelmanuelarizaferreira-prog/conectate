@@ -177,9 +177,8 @@
       <div class="inp-row">
         <textarea id="msgIn" class="chat-inp" rows="1"
           placeholder="Escribe lo que sientes..."
-          maxlength="1000"
-          {% if not api_ok %}disabled{% endif %}></textarea>
-        <button class="send-btn" id="sendBtn" onclick="sendMsg()" {% if not api_ok %}disabled{% endif %}>
+          maxlength="1000"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMsg()">
           <i class="bi bi-send-fill"></i>
         </button>
       </div>
@@ -252,10 +251,16 @@ async function sendMsg(){
       headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body:JSON.stringify({mensaje:text})
     });
-    const d=await r.json();
     typing.classList.remove('show');
-    if(d.ok)addBubble(d.respuesta,'assistant');
-    else{err.innerHTML='<i class="bi bi-x-circle-fill" style="color:#e0284f"></i> '+(d.error||'Error al conectar');err.classList.add('show')}
+    if(!r.ok){
+      const d=await r.json().catch(()=>({}));
+      err.innerHTML='<i class="bi bi-x-circle-fill" style="color:#e0284f"></i> '+(d.error||'Error del servidor ('+r.status+')');
+      err.classList.add('show');
+    } else {
+      const d=await r.json();
+      if(d.ok)addBubble(d.respuesta,'assistant');
+      else{err.innerHTML='<i class="bi bi-x-circle-fill" style="color:#e0284f"></i> '+(d.error||'Error al conectar');err.classList.add('show')}
+    }
   }catch(e){
     typing.classList.remove('show');
     err.innerHTML='<i class="bi bi-x-circle-fill" style="color:#e0284f"></i> No se pudo conectar. Verifica tu conexion.';
