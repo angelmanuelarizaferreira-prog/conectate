@@ -5,10 +5,10 @@ from apps.courses.models import Curso
 
 
 TIPO_ACTIVIDAD = [
-    ('respiracion', 'Ejercicio de Respiracion'),
-    ('reflexion', 'Reflexion'),
+    ('respiracion', 'Ejercicio de Respiración'),
+    ('reflexion', 'Reflexión'),
     ('bienestar', 'Pregunta de Bienestar'),
-    ('meditacion', 'Meditacion'),
+    ('meditacion', 'Meditación'),
     ('gratitud', 'Gratitud'),
 ]
 

@@ -285,13 +285,19 @@ def vincular_hijo(request):
         if accion == 'crear':
             if es_profesor:
                 # El profesor elige el padre manualmente
-                padre_pk = request.POST.get('padre')
+                padre_pk = request.POST.get('padre', '').strip()
+                if not padre_pk:
+                    messages.error(request, 'Debes seleccionar un padre o acudiente de la lista.')
+                    return redirect('accounts:vincular_hijo')
                 padre    = get_object_or_404(User, pk=padre_pk, rol=User.ROL_PADRE)
             else:
                 # El padre se vincula a sí mismo
                 padre = request.user
 
-            est_pk     = request.POST.get('estudiante')
+            est_pk     = request.POST.get('estudiante', '').strip()
+            if not est_pk:
+                messages.error(request, 'Debes seleccionar un estudiante de la lista.')
+                return redirect('accounts:vincular_hijo')
             relacion   = request.POST.get('relacion', 'padre')
             estudiante = get_object_or_404(User, pk=est_pk, rol=User.ROL_ESTUDIANTE)
 

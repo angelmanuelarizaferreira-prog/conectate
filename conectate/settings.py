@@ -102,7 +102,7 @@ DEFAULT_CHARSET = 'utf-8'
 # Configura tu API key en una variable de entorno: ANTHROPIC_API_KEY=sk-ant-...
 # O reemplaza el valor aquí directamente (no recomendado en producción).
 import os
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', 'TU_API_KEY_AQUI')
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 # Producción
 import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

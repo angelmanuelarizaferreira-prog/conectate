@@ -289,10 +289,15 @@ def eliminar_inscripcion(request, pk):
 
 @login_required
 def eliminar_curso(request, pk):
-    if not request.user.es_admin:
+    if not (request.user.es_admin or request.user.es_profesor):
         return HttpResponseForbidden()
 
     curso = get_object_or_404(Curso, pk=pk)
+
+    # Un profesor solo puede eliminar sus propios cursos
+    if request.user.es_profesor and curso.profesor != request.user:
+        return HttpResponseForbidden()
+
     if request.method == 'POST':
         nombre = curso.nombre
         curso.activo = False

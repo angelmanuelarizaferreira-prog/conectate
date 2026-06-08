@@ -80,7 +80,7 @@ const k='diary_{{ entrada.pk|default:"new" }}';
 try{const s=localStorage.getItem(k);if(s){const d=JSON.parse(s);if(d.c&&!ta.value)ta.value=d.c;if(d.t&&!document.querySelector('[name=titulo]').value)document.querySelector('[name=titulo]').value=d.t;upd()}}catch(e){}
 {% endif %}
 ta.addEventListener('input',()=>{try{localStorage.setItem(k,JSON.stringify({c:ta.value,t:document.querySelector('[name=titulo]').value}))}catch(e){}});
-document.getElementById('df').addEventListener('submit',()=>{try{localStorage.removeItem(k)}catch(e){}}});
+document.getElementById('df').addEventListener('submit',()=>{try{localStorage.removeItem(k)}catch(e){}});
 // Deteccion de crisis
 const CRISIS_WORDS = ['suicidio','suicidarme','quitarme la vida','no quiero vivir','hacerme dano','autolesion','cortarme','no puedo mas','desaparecer','morir','quiero morir','acabar con todo'];
 let crisisAlertShown = false;

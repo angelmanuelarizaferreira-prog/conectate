@@ -289,5 +289,25 @@ document.addEventListener('click', e => {
     }
   });
 });
+
+// Validar que padre y estudiante estén seleccionados antes de enviar
+document.querySelectorAll('form').forEach(form => {
+  form.addEventListener('submit', function(e){
+    const accion = form.querySelector('[name=accion]');
+    if(accion && accion.value !== 'crear') return; // solo validar al crear
+    const estId = form.querySelector('#estId');
+    if(estId && !estId.value){
+      e.preventDefault();
+      alert('Por favor selecciona un estudiante de la lista de sugerencias.');
+      return;
+    }
+    const padreId = form.querySelector('#padreId');
+    if(padreId && !padreId.value){
+      e.preventDefault();
+      alert('Por favor selecciona un padre o acudiente de la lista de sugerencias.');
+      return;
+    }
+  });
+});
 </script>
 {% endblock %}
