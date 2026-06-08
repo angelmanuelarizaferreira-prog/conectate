@@ -429,10 +429,6 @@ body.dark .idx-entry.active{background:rgba(157,143,255,.1);border-color:rgba(15
     <a href="{% url 'emotions:diario_lista' %}" class="sb-link {% if 'diario' in request.resolver_match.url_name|default:'' %}active{% endif %}">
       <i class="bi bi-journal-bookmark-fill"></i> Mi diario
     </a>
-    <a href="{% url 'emotions:chat_lista' %}" class="sb-link {% if 'chat' in request.resolver_match.url_name|default:'' %}active{% endif %}">
-      <i class="bi bi-robot"></i> Luna IA
-      <span class="sb-badge">IA</span>
-    </a>
     <a href="{% url 'emotions:capsulas' %}" class="sb-link {% if request.resolver_match.url_name == 'capsulas' %}active{% endif %}">
       <i class="bi bi-lightning-charge-fill"></i> C&aacute;psulas
     </a>

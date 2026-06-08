@@ -157,19 +157,49 @@ def _construir_texto_para_ia(curso, stats_lista, dias):
 
 SYSTEM_INFORME = """Eres un experto en psicologia educativa y bienestar estudiantil.
 Recibes datos emocionales numericos de estudiantes de un curso colombiano y debes generar
-un informe profesional, claro y util para el profesor.
+un informe profesional, detallado, claro y util para el profesor.
 
-El informe debe incluir:
-1. RESUMEN EJECUTIVO (2-3 parrafos): estado general del grupo, hallazgos mas importantes
-2. ESTUDIANTES QUE REQUIEREN ATENCION: lista de los que tienen alertas, tendencia baja o muchos dias bajos, con recomendacion especifica para cada uno
-3. FORTALEZAS DEL GRUPO: aspectos positivos detectados
-4. RECOMENDACIONES GENERALES (3-5 puntos): acciones concretas que el profesor puede tomar
-5. NOTA METODOLOGICA: breve explicacion de como interpretar los datos
+El informe DEBE incluir TODAS estas secciones sin omitir ninguna:
 
-Usa lenguaje profesional pero accesible. No uses formato markdown con asteriscos — usa
-texto plano con titulos en MAYUSCULAS y vinetas con guion (-).
-Se especifico con nombres cuando sea relevante.
-Responde en espanol colombiano."""
+INFORME DE BIENESTAR EMOCIONAL - [NOMBRE DEL CURSO]
+Periodo: [PERIODO]
+================================================================================
+
+RESUMEN EJECUTIVO
+Escribe 3-4 parrafos completos sobre el estado general del grupo, patrones emocionales
+detectados, hallazgos mas importantes y contexto general. Se detallado.
+
+================================================================================
+ESTUDIANTES QUE REQUIEREN ATENCION PRIORITARIA
+
+Para CADA estudiante con tendencia bajante, muchos dias bajos o alertas, escribe:
+- Nombre (promedio X/5, situacion): descripcion de su situacion especifica, 
+  que emociones predominan, que indica el patron. 
+  RECOMENDACION: accion concreta y especifica para el profesor.
+
+No omitas ningun estudiante que necesite atencion. Se exhaustivo.
+
+================================================================================
+FORTALEZAS DEL GRUPO
+Lista detallada de aspectos positivos, estudiantes destacados con sus nombres,
+patrones positivos detectados. Minimo 4-5 puntos.
+
+================================================================================
+RECOMENDACIONES GENERALES PARA EL PROFESOR
+Lista de 5-7 acciones concretas y especificas que el profesor puede implementar
+esta semana. Incluye actividades, dinamicas, conversaciones sugeridas.
+
+================================================================================
+NOTA METODOLOGICA
+Explica brevemente como se calculan los datos y como interpretarlos correctamente.
+
+Reglas importantes:
+- NO uses markdown con asteriscos ni corchetes
+- Usa texto plano con titulos en MAYUSCULAS
+- Usa guion (-) para listas
+- Se especifico con nombres de estudiantes
+- Responde en espanol colombiano natural
+- El informe debe ser COMPLETO, no lo cortes ni resumas. Desarrolla cada seccion completamente."""
 
 
 def _llamar_anthropic_informe(texto_datos):
@@ -179,7 +209,7 @@ def _llamar_anthropic_informe(texto_datos):
 
     payload = json.dumps({
         'model': 'claude-haiku-4-5-20251001',
-        'max_tokens': 2000,
+        'max_tokens': 4000,
         'system': SYSTEM_INFORME,
         'messages': [{'role': 'user', 'content': texto_datos}],
     }).encode('utf-8')
@@ -390,18 +420,41 @@ def _generar_pdf(curso, stats_lista, analisis_ia, dias):
             st_small))
         story.append(Spacer(1, 0.3*cm))
 
-        # Dividir el analisis en parrafos
-        for bloque in analisis_ia.split('\n\n'):
+        # Sanitizar y dividir el analisis en parrafos
+        import unicodedata
+        def limpiar(t):
+            # Normalizar unicode y quitar caracteres no imprimibles
+            t = unicodedata.normalize('NFC', t)
+            return ''.join(c for c in t if c.isprintable() or c in '\n\t ')
+
+        analisis_limpio = limpiar(analisis_ia)
+
+        for bloque in analisis_limpio.split('\n\n'):
             bloque = bloque.strip()
             if not bloque:
                 continue
-            if bloque.isupper() or bloque.startswith(('1.','2.','3.','4.','5.')):
-                story.append(Paragraph(bloque, st_h2))
-            else:
-                for linea in bloque.split('\n'):
+            # Detectar titulos: lineas en mayusculas o separadores ===
+            lineas_bloque = bloque.split('\n')
+            primera = lineas_bloque[0].strip()
+            es_titulo = (
+                primera.isupper() and len(primera) > 4
+                or primera.startswith('===')
+                or primera.startswith('INFORME')
+                or primera.startswith('Periodo:')
+            )
+            if es_titulo:
+                if not primera.startswith('==='):
+                    story.append(Paragraph(primera, st_h2))
+                for linea in lineas_bloque[1:]:
                     linea = linea.strip()
-                    if linea:
+                    if linea and not linea.startswith('==='):
                         story.append(Paragraph(linea, st_body))
+            else:
+                for linea in lineas_bloque:
+                    linea = linea.strip()
+                    if linea and not linea.startswith('==='):
+                        story.append(Paragraph(linea, st_body))
+            story.append(Spacer(1, 0.15*cm))
         story.append(Spacer(1, 0.3*cm))
     else:
         story.append(Paragraph(
