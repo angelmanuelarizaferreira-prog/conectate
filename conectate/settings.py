@@ -99,12 +99,9 @@ FILE_CHARSET = 'utf-8'
 DEFAULT_CHARSET = 'utf-8'
 
 # ─── ANTHROPIC API ───────────────────────────────────────────────────────────
-# Configura tu API key en una variable de entorno: ANTHROPIC_API_KEY=sk-ant-...
-# O reemplaza el valor aquí directamente (no recomendado en producción).
-import os
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-# Producción
-import os
+
+# ─── Producción (Railway) ─────────────────────────────────────────────────────
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

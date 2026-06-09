@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.urls import path
-from . import views, chat_views, informe_views, bienestar_views, extra_views, nueva_views
+from . import views, informe_views, bienestar_views, extra_views, nueva_views
 
 app_name = 'emotions'
 
@@ -16,13 +16,7 @@ urlpatterns = [
     path('diario/<int:pk>/',                views.diario_detalle,               name='diario_detalle'),
     path('diario/<int:pk>/editar/',         views.diario_editar,                name='diario_editar'),
     path('diario/<int:pk>/eliminar/',       views.diario_eliminar,              name='diario_eliminar'),
-    # Chat IA
-    path('chat/',                           chat_views.chat_lista,              name='chat_lista'),
-    path('chat/nueva/',                     chat_views.chat_nueva_sesion,       name='chat_nueva'),
-    path('chat/<int:pk>/',                  chat_views.chat_sesion,             name='chat_sesion'),
-    path('chat/<int:pk>/enviar/',           chat_views.chat_enviar,             name='chat_enviar'),
-    path('chat/<int:pk>/eliminar/',         chat_views.chat_eliminar,           name='chat_eliminar'),
-    path('chat/widget/sesion/',             chat_views.chat_widget_session,     name='chat_widget_session'),
+    # Chat IA removido - solo se mantienen los informes PDF para profesores
     # Informes
     path('informe/',                        informe_views.informe_selector,     name='informe_selector'),
     path('informe/<int:curso_id>/',         informe_views.informe_preview,      name='informe_preview'),

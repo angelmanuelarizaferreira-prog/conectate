@@ -1,1 +1,1 @@
-web: gunicorn conectate.wsgi --bind 0.0.0.0:$PORT
+web: gunicorn conectate.wsgi --bind 0.0.0.0:$PORT --timeout 120 --workers 2

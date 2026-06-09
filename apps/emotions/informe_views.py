@@ -571,38 +571,52 @@ def informe_preview(request, curso_id):
 @login_required
 def informe_descargar(request, curso_id):
     """Genera y descarga el PDF del informe con analisis IA."""
-    if request.user.es_estudiante:
-        return HttpResponseForbidden()
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        if request.user.es_estudiante:
+            return HttpResponseForbidden()
 
-    curso = get_object_or_404(Curso, pk=curso_id, activo=True)
-    if not request.user.es_admin and curso.profesor != request.user:
-        return HttpResponseForbidden()
+        curso = get_object_or_404(Curso, pk=curso_id, activo=True)
+        if not request.user.es_admin and curso.profesor != request.user:
+            return HttpResponseForbidden()
 
-    dias = int(request.GET.get('dias', 30))
-    dias = min(max(dias, 7), 90)
+        dias = int(request.GET.get('dias', 30))
+        dias = min(max(dias, 7), 90)
 
-    # Calcular stats en BULK (2 queries sin importar cuántos estudiantes)
-    inscritos = Inscripcion.objects.filter(curso=curso, activa=True).select_related('estudiante')
-    estudiantes = [insc.estudiante for insc in inscritos]
-    bulk = _stats_bulk_curso(estudiantes, dias)
-    stats_lista = [s for s in bulk.values() if s is not None]
+        # Calcular stats en BULK (2 queries sin importar cuantos estudiantes)
+        inscritos = Inscripcion.objects.filter(curso=curso, activa=True).select_related('estudiante')
+        estudiantes = [insc.estudiante for insc in inscritos]
+        bulk = _stats_bulk_curso(estudiantes, dias)
+        stats_lista = [s for s in bulk.values() if s is not None]
 
-    if not stats_lista:
-        return HttpResponse("No hay datos suficientes para generar el informe.", status=400)
+        if not stats_lista:
+            return HttpResponse("No hay datos suficientes para generar el informe.", status=400)
 
-    # Analisis IA
-    texto_datos = _construir_texto_para_ia(curso, stats_lista, dias)
-    analisis_ia, error_ia = _llamar_anthropic_informe(texto_datos)
+        # Analisis IA (puede ser None si no hay API key o falla)
+        analisis_ia = None
+        try:
+            texto_datos = _construir_texto_para_ia(curso, stats_lista, dias)
+            analisis_ia, error_ia = _llamar_anthropic_informe(texto_datos)
+        except Exception as e:
+            logger.warning(f"Error al llamar IA para informe: {e}")
+            analisis_ia = None
 
-    # Generar PDF
-    pdf_buffer, error_pdf = _generar_pdf(curso, stats_lista, analisis_ia, dias)
+        # Generar PDF
+        pdf_buffer, error_pdf = _generar_pdf(curso, stats_lista, analisis_ia, dias)
 
-    if error_pdf:
-        return HttpResponse(f"Error generando PDF: {error_pdf}", status=500)
+        if error_pdf:
+            return HttpResponse(f"Error generando PDF: {error_pdf}", status=500)
 
-    nombre_archivo = (
-        f"informe_{curso.nombre.replace(' ','_')}_{date.today().strftime('%Y%m%d')}.pdf"
-    )
-    response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
-    return response
+        nombre_archivo = (
+            f"informe_{curso.nombre.replace(' ','_')}_{date.today().strftime('%Y%m%d')}.pdf"
+        )
+        response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+        return response
+    except Exception as e:
+        logger.error(f"Error inesperado generando informe PDF para curso {curso_id}: {e}", exc_info=True)
+        return HttpResponse(
+            "Error interno generando el PDF. Por favor intenta de nuevo o contacta al administrador.",
+            status=500
+        )

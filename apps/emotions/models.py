@@ -344,7 +344,6 @@ LOGROS_CATALOGO = {
     'meta_cumplida':      {'nombre': 'Promesa Cumplida',   'desc': 'Cumpliste tu primera meta semanal',        'emoji': 'bi-bullseye', 'xp': 40},
     'metas_5':            {'nombre': 'Meta Master',        'desc': '5 metas semanales cumplidas',              'emoji': 'bi-trophy-fill', 'xp': 100},
     'explorador':         {'nombre': 'Explorador',         'desc': 'Registraste las 5 emociones distintas',    'emoji': 'bi-compass-fill', 'xp': 35},
-    'luna_chat':          {'nombre': 'Conversador',        'desc': 'Primera conversacion con Luna',            'emoji': 'bi-robot', 'xp': 15},
     'actividad_5':        {'nombre': 'Participante',       'desc': 'Completaste 5 actividades',                'emoji': 'bi-star-fill', 'xp': 45},
     'bienestar_alto':     {'nombre': 'En Buena Onda',      'desc': 'Promedio de 4.5 o mas en una semana',      'emoji': 'bi-emoji-smile-fill', 'xp': 60},
     'registros_30':       {'nombre': 'Constante',          'desc': '30 registros en total',                    'emoji': 'bi-calendar3', 'xp': 70},
@@ -421,10 +420,6 @@ def verificar_logros(estudiante):
     metas_cumplidas = MetaSemanal.objects.filter(estudiante=estudiante, cumplida=True).count()
     if metas_cumplidas >= 1: otorgar('meta_cumplida')
     if metas_cumplidas >= 5: otorgar('metas_5')
-
-    # Chat con Luna
-    if SesionChat.objects.filter(estudiante=estudiante).exists():
-        otorgar('luna_chat')
 
     # Actividades
     from apps.activities.models import RespuestaActividad
