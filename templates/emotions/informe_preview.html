@@ -309,11 +309,43 @@
 
 {% block extra_js %}
 <script>
+const API_OK = {{ api_ok|yesno:"true,false" }};
+const PDF_URL = "{% url 'emotions:informe_descargar' curso.pk %}?dias={{ dias }}";
+const IA_URL  = "{% url 'emotions:informe_generar_ia' curso.pk %}?dias={{ dias }}";
+
+async function descargarPDF(btn) {
+  const original = btn.innerHTML;
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '.7';
+
+  if (API_OK) {
+    btn.innerHTML = '<i class="bi bi-cpu-fill"></i> Generando análisis IA... (20-40 seg)';
+    try {
+      const resp = await fetch(IA_URL, {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+      });
+      if (!resp.ok) throw new Error('IA falló');
+    } catch(e) {
+      // Si la IA falla, descargamos sin ella
+      console.warn('IA no disponible, generando PDF sin análisis:', e);
+    }
+  }
+
+  btn.innerHTML = '<i class="bi bi-file-earmark-pdf-fill"></i> Descargando PDF...';
+  window.location.href = PDF_URL;
+
+  setTimeout(() => {
+    btn.innerHTML = original;
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+  }, 3000);
+}
+
 document.querySelectorAll('#btnDescargar, #btnDescargaGrande').forEach(btn => {
-  btn.addEventListener('click', function() {
-    this.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando... (10-20 seg)';
-    this.style.opacity = '.7';
-    this.style.pointerEvents = 'none';
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    descargarPDF(this);
   });
 });
 </script>

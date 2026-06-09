@@ -8,9 +8,9 @@
 {% block extra_css %}
 <style>
 .search-drop{
-  position:absolute;top:100%;left:0;right:0;z-index:999;
+  position:absolute;top:100%;left:0;right:0;z-index:9999;
   background:var(--card);border:1.5px solid var(--border);border-radius:12px;
-  box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;margin-top:4px;
+  box-shadow:0 8px 32px rgba(0,0,0,.22);max-height:220px;overflow-y:auto;margin-top:4px;
 }
 .search-opt{
   padding:.6rem 1rem;cursor:pointer;font-size:.85rem;font-weight:600;transition:background .1s;
@@ -50,7 +50,7 @@
 <div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem">
 
   <!-- Form crear vínculo -->
-  <div class="vinculo-form fade-up">
+  <div class="vinculo-form fade-up" style="overflow:visible">
     <div style="font-weight:800;font-size:.95rem;margin-bottom:1.25rem;
                 display:flex;align-items:center;gap:.5rem;color:var(--ink)">
       <i class="bi bi-person-lines-fill" style="color:var(--accent)"></i>

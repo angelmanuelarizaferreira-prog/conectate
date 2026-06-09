@@ -161,6 +161,7 @@ def dashboard_admin(request):
     total_usuarios = User.objects.count()
     total_estudiantes = User.objects.filter(rol=User.ROL_ESTUDIANTE).count()
     total_profesores = User.objects.filter(rol=User.ROL_PROFESOR).count()
+    total_padres = User.objects.filter(rol=User.ROL_PADRE).count()
     total_cursos = Curso.objects.filter(activo=True).count()
     total_alertas = Alerta.objects.filter(resuelta=False).count()
     registros_hoy = RegistroEmocional.objects.filter(fecha=hoy).count()
@@ -184,6 +185,7 @@ def dashboard_admin(request):
         'total_usuarios': total_usuarios,
         'total_estudiantes': total_estudiantes,
         'total_profesores': total_profesores,
+        'total_padres': total_padres,
         'total_cursos': total_cursos,
         'total_alertas': total_alertas,
         'registros_hoy': registros_hoy,

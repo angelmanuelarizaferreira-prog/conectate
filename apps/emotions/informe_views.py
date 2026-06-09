@@ -122,84 +122,58 @@ def _stats_bulk_curso(estudiantes, dias=30):
 
 
 def _construir_texto_para_ia(curso, stats_lista, dias):
-    """Construye el texto del prompt con los datos del curso para la IA."""
+    """Construye el texto del prompt con los datos del curso para la IA.
+    Limita a los 12 estudiantes mas relevantes para mantener el prompt corto."""
     hoy = date.today()
-    lineas = [
-        f"Analiza los datos emocionales del curso '{curso.nombre}' ({curso.grado})",
-        f"Periodo: ultimos {dias} dias (hasta {hoy.strftime('%d/%m/%Y')})",
-        f"Total estudiantes con datos: {len(stats_lista)}",
-        "",
-        "DATOS POR ESTUDIANTE:",
-    ]
 
-    for s in stats_lista:
-        emo_str = ', '.join(f"{k}: {v}" for k, v in s['conteo_emociones'].items())
-        tend = "↑ mejorando" if s['tendencia'] > 0.3 else ("↓ bajando" if s['tendencia'] < -0.3 else "→ estable")
-        lineas.append(
-            f"- {s['nombre']}: promedio={s['promedio']}/5, "
-            f"registros={s['total_registros']}, tendencia={tend}, "
-            f"emociones=[{emo_str}], dias_bajos={s['dias_bajos']}, "
-            f"alertas_activas={s['alertas_activas']}, racha={s['racha']} dias"
-        )
+    # Priorizar: estudiantes con alertas, tendencia baja, o promedio bajo
+    def prioridad(s):
+        score = 0
+        if s['alertas_activas'] > 0: score += 10
+        if s['tendencia'] < -0.3: score += 5
+        if s['promedio'] <= 2.5: score += 5
+        if s['dias_bajos'] > 3: score += 3
+        return score
 
-    # Promedios generales del curso
+    # Tomar hasta 12 estudiantes: los mas prioritarios + algunos positivos
+    ordenados = sorted(stats_lista, key=prioridad, reverse=True)
+    muestra = ordenados[:12]
+
     todos_promedios = [s['promedio'] for s in stats_lista]
     promedio_curso  = round(sum(todos_promedios) / len(todos_promedios), 2) if todos_promedios else 0
-    lineas += [
+
+    lineas = [
+        f"Curso: {curso.nombre} ({curso.grado}) | Periodo: {dias} dias | Total estudiantes: {len(stats_lista)}",
+        f"Promedio curso: {promedio_curso}/5 | Con alertas: {sum(1 for s in stats_lista if s['alertas_activas'] > 0)} | Tendencia baja: {sum(1 for s in stats_lista if s['tendencia'] < -0.3)}",
         "",
-        f"RESUMEN DEL CURSO: promedio_general={promedio_curso}/5",
-        f"estudiantes_con_alertas={sum(1 for s in stats_lista if s['alertas_activas'] > 0)}",
-        f"estudiantes_tendencia_baja={sum(1 for s in stats_lista if s['tendencia'] < -0.3)}",
+        "ESTUDIANTES PRIORITARIOS (muestra representativa):",
     ]
+
+    for s in muestra:
+        tend = "BAJANDO" if s['tendencia'] < -0.3 else ("subiendo" if s['tendencia'] > 0.3 else "estable")
+        lineas.append(
+            f"- {s['nombre']}: prom={s['promedio']}/5, tend={tend}, "
+            f"alertas={s['alertas_activas']}, dias_bajos={s['dias_bajos']}"
+        )
 
     return '\n'.join(lineas)
 
 
-SYSTEM_INFORME = """Eres un experto en psicologia educativa y bienestar estudiantil.
-Recibes datos emocionales numericos de estudiantes de un curso colombiano y debes generar
-un informe profesional, detallado, claro y util para el profesor.
+SYSTEM_INFORME = """Eres un experto en psicologia educativa. Analiza datos emocionales de estudiantes colombianos y genera un informe conciso para el profesor.
 
-El informe DEBE incluir TODAS estas secciones sin omitir ninguna:
+Estructura (texto plano, sin markdown, titulos en MAYUSCULAS, listas con guion):
 
-INFORME DE BIENESTAR EMOCIONAL - [NOMBRE DEL CURSO]
-Periodo: [PERIODO]
-================================================================================
+RESUMEN DEL GRUPO
+2 parrafos sobre el estado general y patrones detectados.
 
-RESUMEN EJECUTIVO
-Escribe 3-4 parrafos completos sobre el estado general del grupo, patrones emocionales
-detectados, hallazgos mas importantes y contexto general. Se detallado.
+ESTUDIANTES QUE REQUIEREN ATENCION
+Para cada estudiante con alertas o tendencia baja:
+- Nombre: situacion y recomendacion concreta.
 
-================================================================================
-ESTUDIANTES QUE REQUIEREN ATENCION PRIORITARIA
+RECOMENDACIONES PARA EL PROFESOR
+3-4 acciones concretas para esta semana.
 
-Para CADA estudiante con tendencia bajante, muchos dias bajos o alertas, escribe:
-- Nombre (promedio X/5, situacion): descripcion de su situacion especifica, 
-  que emociones predominan, que indica el patron. 
-  RECOMENDACION: accion concreta y especifica para el profesor.
-
-No omitas ningun estudiante que necesite atencion. Se exhaustivo.
-
-================================================================================
-FORTALEZAS DEL GRUPO
-Lista detallada de aspectos positivos, estudiantes destacados con sus nombres,
-patrones positivos detectados. Minimo 4-5 puntos.
-
-================================================================================
-RECOMENDACIONES GENERALES PARA EL PROFESOR
-Lista de 5-7 acciones concretas y especificas que el profesor puede implementar
-esta semana. Incluye actividades, dinamicas, conversaciones sugeridas.
-
-================================================================================
-NOTA METODOLOGICA
-Explica brevemente como se calculan los datos y como interpretarlos correctamente.
-
-Reglas importantes:
-- NO uses markdown con asteriscos ni corchetes
-- Usa texto plano con titulos en MAYUSCULAS
-- Usa guion (-) para listas
-- Se especifico con nombres de estudiantes
-- Responde en espanol colombiano natural
-- El informe debe ser COMPLETO, no lo cortes ni resumas. Desarrolla cada seccion completamente."""
+Reglas: sin asteriscos, sin corchetes, en espanol colombiano, conciso y util."""
 
 
 def _llamar_anthropic_informe(texto_datos):
@@ -209,7 +183,7 @@ def _llamar_anthropic_informe(texto_datos):
 
     payload = json.dumps({
         'model': 'claude-haiku-4-5-20251001',
-        'max_tokens': 4000,
+        'max_tokens': 1500,
         'system': SYSTEM_INFORME,
         'messages': [{'role': 'user', 'content': texto_datos}],
     }).encode('utf-8')
@@ -226,7 +200,7 @@ def _llamar_anthropic_informe(texto_datos):
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=25) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             return data['content'][0]['text'], None
     except urllib.error.HTTPError as e:
@@ -593,14 +567,9 @@ def informe_descargar(request, curso_id):
         if not stats_lista:
             return HttpResponse("No hay datos suficientes para generar el informe.", status=400)
 
-        # Analisis IA (puede ser None si no hay API key o falla)
-        analisis_ia = None
-        try:
-            texto_datos = _construir_texto_para_ia(curso, stats_lista, dias)
-            analisis_ia, error_ia = _llamar_anthropic_informe(texto_datos)
-        except Exception as e:
-            logger.warning(f"Error al llamar IA para informe: {e}")
-            analisis_ia = None
+        # Analisis IA: se incluye solo si viene en la peticion (generado previamente via AJAX)
+        # Para evitar timeout en Railway, el PDF se genera SIN llamar a Anthropic directamente
+        analisis_ia = request.session.pop(f'informe_ia_{curso_id}', None)
 
         # Generar PDF
         pdf_buffer, error_pdf = _generar_pdf(curso, stats_lista, analisis_ia, dias)
@@ -620,3 +589,36 @@ def informe_descargar(request, curso_id):
             "Error interno generando el PDF. Por favor intenta de nuevo o contacta al administrador.",
             status=500
         )
+
+
+@login_required
+@require_POST
+def informe_generar_ia(request, curso_id):
+    """Genera el análisis IA y lo guarda en session para el siguiente PDF."""
+    if request.user.es_estudiante:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    curso = get_object_or_404(Curso, pk=curso_id, activo=True)
+    if not request.user.es_admin and curso.profesor != request.user:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    dias = int(request.GET.get('dias', 30))
+    dias = min(max(dias, 7), 90)
+
+    inscritos = Inscripcion.objects.filter(curso=curso, activa=True).select_related('estudiante')
+    estudiantes = [insc.estudiante for insc in inscritos]
+    bulk = _stats_bulk_curso(estudiantes, dias)
+    stats_lista = [s for s in bulk.values() if s is not None]
+
+    if not stats_lista:
+        return JsonResponse({'error': 'Sin datos'}, status=400)
+
+    texto_datos = _construir_texto_para_ia(curso, stats_lista, dias)
+    analisis_ia, error = _llamar_anthropic_informe(texto_datos)
+
+    if error:
+        return JsonResponse({'error': error}, status=500)
+
+    # Guardar en session para que informe_descargar lo use
+    request.session[f'informe_ia_{curso_id}'] = analisis_ia
+    return JsonResponse({'ok': True, 'chars': len(analisis_ia)})

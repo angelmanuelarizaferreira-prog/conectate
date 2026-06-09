@@ -21,6 +21,7 @@ urlpatterns = [
     path('informe/',                        informe_views.informe_selector,     name='informe_selector'),
     path('informe/<int:curso_id>/',         informe_views.informe_preview,      name='informe_preview'),
     path('informe/<int:curso_id>/pdf/',     informe_views.informe_descargar,    name='informe_descargar'),
+    path('informe/<int:curso_id>/ia/',      informe_views.informe_generar_ia,   name='informe_generar_ia'),
     path('informe/<int:curso_id>/excel/',   informe_views.informe_excel,        name='informe_excel'),
     # Bienestar
     path('logros/',                         bienestar_views.logros_view,        name='logros'),
