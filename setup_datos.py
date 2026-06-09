@@ -31,6 +31,7 @@ from apps.activities.models import Actividad, RespuestaActividad
 from apps.emotions.models import (
     RegistroEmocional, EntradaDiario, Logro,
     NotaProfesor, MensajeDirecto,
+    Encuesta, RespuestaEncuesta, RetoGrupal,
 )
 
 
@@ -388,6 +389,120 @@ for est in todos_estudiantes:
             total_logros += 1
 ok(f"{total_logros} logros desbloqueados")
 
+# ── 12. ENCUESTAS (activas e inactivas) ──────────────────────────────────────
+titulo("12. Encuestas de bienestar")
+from datetime import date, timedelta
+hoy_local = date.today()
+
+ENCUESTAS_DEF = [
+    dict(titulo="¿Cómo te has sentido esta semana?", tipo="escala",
+         descripcion="Evalúa del 1 al 5 tu bienestar emocional general durante esta semana.",
+         activa=True,  fecha_limite=hoy_local + timedelta(days=7)),
+    dict(titulo="Ambiente del salón de clases", tipo="opciones",
+         descripcion="¿Cómo describes el ambiente en el salón?",
+         opciones=["Muy bueno","Bueno","Regular","Malo","Muy malo"],
+         activa=True,  fecha_limite=hoy_local + timedelta(days=5)),
+    dict(titulo="¿Qué te genera más estrés?", tipo="opciones",
+         descripcion="Selecciona la principal fuente de estrés en tu vida escolar.",
+         opciones=["Exámenes","Tareas","Relaciones con compañeros","Familia","Otro"],
+         activa=True,  fecha_limite=hoy_local + timedelta(days=10)),
+    dict(titulo="Reflexión del mes pasado", tipo="texto",
+         descripcion="Escribe cómo fue tu bienestar emocional el mes pasado en una frase.",
+         activa=False, fecha_limite=hoy_local - timedelta(days=5)),
+    dict(titulo="Evaluación del clima escolar", tipo="escala",
+         descripcion="¿Qué tan seguro/a te sientes en el colegio? (1=poco, 5=mucho)",
+         activa=False, fecha_limite=hoy_local - timedelta(days=10)),
+]
+
+encuestas_creadas = []
+total_enc = 0
+total_resp_enc = 0
+
+for curso in cursos:
+    est_curso = est_por_curso[curso]
+    for edata in ENCUESTAS_DEF:
+        opts = edata.get('opciones')
+        enc, created = Encuesta.objects.get_or_create(
+            titulo=edata['titulo'], curso=curso,
+            defaults={
+                'descripcion': edata['descripcion'],
+                'tipo':        edata['tipo'],
+                'opciones':    opts,
+                'creada_por':  prof,
+                'activa':      edata['activa'],
+                'anonima':     True,
+                'fecha_limite': edata['fecha_limite'],
+            }
+        )
+        if created:
+            total_enc += 1
+        encuestas_creadas.append((enc, edata['tipo'], opts, edata['activa'], est_curso))
+
+# Respuestas: ~65% responden encuestas activas, ~40% las inactivas (ya respondieron antes)
+for enc, tipo, opts, activa, est_curso in encuestas_creadas:
+    tasa = 0.65 if activa else 0.40
+    respondientes = random.sample(est_curso, k=max(1, int(len(est_curso) * tasa)))
+    for est in respondientes:
+        defaults = {}
+        if tipo == 'escala':
+            defaults = {'valor_escala': random.randint(2, 5)}
+        elif tipo == 'opciones' and opts:
+            defaults = {'valor_opcion': random.choice(opts)}
+        else:
+            defaults = {'valor_texto': random.choice([
+                "Fue una etapa difícil pero aprendí mucho.",
+                "Me sentí apoyado/a por mis compañeros.",
+                "Tuve momentos de estrés pero lo manejé bien.",
+                "Extrañé más tiempo para descansar.",
+            ])}
+        _, cr = RespuestaEncuesta.objects.get_or_create(
+            encuesta=enc, estudiante=est, defaults=defaults)
+        if cr:
+            total_resp_enc += 1
+
+ok(f"{total_enc} encuestas creadas  |  {total_resp_enc} respuestas  (activas e inactivas)")
+
+# ── 13. RETOS GRUPALES (activos y vencidos) ────────────────────────────────────
+titulo("13. Retos grupales")
+
+RETOS_DEF = [
+    dict(titulo="7 días de gratitud", activo=True,
+         descripcion="Registra tu emoción todos los días esta semana y escribe una cosa por la que estés agradecido/a.",
+         dias_inicio=-2, dias_fin=5),
+    dict(titulo="Semana sin quejas", activo=True,
+         descripcion="Durante esta semana intenta reemplazar cada queja por una observación positiva.",
+         dias_inicio=0, dias_fin=7),
+    dict(titulo="Reto de mindfulness", activo=True,
+         descripcion="Practica 5 minutos de respiración consciente cada día y registra cómo te sientes.",
+         dias_inicio=-1, dias_fin=6),
+    dict(titulo="Reto de conexión", activo=False,
+         descripcion="Habla con un compañero diferente cada día durante una semana.",
+         dias_inicio=-20, dias_fin=-13),
+    dict(titulo="Mes de bienestar emocional", activo=False,
+         descripcion="Registra tu emoción al menos 4 días por semana durante todo el mes.",
+         dias_inicio=-35, dias_fin=-5),
+]
+
+total_retos = 0
+for curso in cursos:
+    for rdata in RETOS_DEF:
+        fi = hoy_local + timedelta(days=rdata['dias_inicio'])
+        ff = hoy_local + timedelta(days=rdata['dias_fin'])
+        _, created = RetoGrupal.objects.get_or_create(
+            titulo=rdata['titulo'], curso=curso,
+            defaults={
+                'descripcion': rdata['descripcion'],
+                'creado_por':  prof,
+                'fecha_inicio': fi,
+                'fecha_fin':    ff,
+                'activo':       rdata['activo'],
+            }
+        )
+        if created:
+            total_retos += 1
+
+ok(f"{total_retos} retos grupales creados  (3 activos + 2 vencidos por curso)")
+
 # ── RESUMEN FINAL ──────────────────────────────────────────────────────────────
 titulo("✅  DATOS CARGADOS EXITOSAMENTE")
 print(f"""
@@ -417,4 +532,6 @@ print(f"""
   • Registros emocionales: 30 días  (alta participación)
   • Actividades: ~60% completadas, ~40% pendientes
   • Diarios, notas del profesor, mensajes y logros incluidos
+  • Encuestas: 3 activas + 2 cerradas con respuestas
+  • Retos grupales: 3 activos + 2 vencidos
 """)
