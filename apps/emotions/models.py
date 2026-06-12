@@ -177,6 +177,50 @@ class MetaSemanal(models.Model):
         return f"{self.estudiante} — Semana {self.semana_inicio}"
 
 
+def _notificar_padres_alerta(estudiante, tipo_alerta, mensaje_alerta):
+    """
+    Envía una Notificacion a cada padre/acudiente vinculado al estudiante
+    cuando se crea una nueva alerta emocional sobre ese estudiante.
+    Solo genera una notificación por padre si aún no tiene una no-leída
+    del mismo tipo para este estudiante hoy.
+    """
+    from datetime import date
+    from apps.accounts.models import VinculoPadreHijo
+
+    hoy = date.today()
+    nombre_est = estudiante.get_full_name()
+
+    padres = VinculoPadreHijo.objects.filter(
+        estudiante=estudiante, activo=True
+    ).select_related('padre')
+
+    TIPO_TITULO = {
+        Alerta.TIPO_NEGATIVO_CONSECUTIVO: f'⚠️ {nombre_est} lleva varios días con emociones difíciles',
+        Alerta.TIPO_PUNTAJE_BAJO:         f'🚨 {nombre_est} reportó un estado emocional muy bajo hoy',
+        Alerta.TIPO_CAMBIO_BRUSCO:        f'📉 Cambio emocional brusco en {nombre_est}',
+    }
+    titulo = TIPO_TITULO.get(tipo_alerta, f'Alerta emocional: {nombre_est}')
+
+    for vinculo in padres:
+        padre = vinculo.padre
+        # Evitar spam: no crear si ya existe una notif no leída hoy del mismo tipo-estudiante
+        ya_notificado = Notificacion.objects.filter(
+            usuario=padre,
+            tipo='alerta_padre',
+            titulo__startswith=titulo[:40],
+            leida=False,
+            created_at__date=hoy,
+        ).exists()
+        if not ya_notificado:
+            Notificacion.objects.create(
+                usuario=padre,
+                tipo='alerta_padre',
+                titulo=titulo,
+                cuerpo=mensaje_alerta,
+                url=f'/accounts/padre/hijo/{estudiante.pk}/',
+            )
+
+
 def verificar_y_crear_alerta(estudiante):
     """Analiza los ultimos registros y genera alertas si es necesario."""
     from datetime import date, timedelta
@@ -202,12 +246,17 @@ def verificar_y_crear_alerta(estudiante):
         ).exists()
         if not ya_existe:
             emociones_str = ', '.join([r.get_emocion_display() for r in registros])
+            mensaje = (
+                f"{estudiante.get_full_name()} ha reportado emociones negativas "
+                f"durante {DIAS} dias consecutivos: {emociones_str}."
+            )
             Alerta.objects.create(
                 estudiante=estudiante,
                 tipo=Alerta.TIPO_NEGATIVO_CONSECUTIVO,
                 prioridad=Alerta.PRIORIDAD_ALTA,
-                mensaje=f"{estudiante.get_full_name()} ha reportado emociones negativas durante {DIAS} dias consecutivos: {emociones_str}."
+                mensaje=mensaje,
             )
+            _notificar_padres_alerta(estudiante, Alerta.TIPO_NEGATIVO_CONSECUTIVO, mensaje)
 
     # Alerta por puntaje muy bajo (1)
     ultimo = registros[0]
@@ -219,12 +268,17 @@ def verificar_y_crear_alerta(estudiante):
             fecha_creacion__date=hoy
         ).exists()
         if not ya_existe:
+            mensaje = (
+                f"{estudiante.get_full_name()} reporto un puntaje emocional de 1/5 hoy "
+                f"({ultimo.get_emocion_display()}). Requiere atencion."
+            )
             Alerta.objects.create(
                 estudiante=estudiante,
                 tipo=Alerta.TIPO_PUNTAJE_BAJO,
                 prioridad=Alerta.PRIORIDAD_ALTA,
-                mensaje=f"{estudiante.get_full_name()} reporto un puntaje emocional de 1/5 hoy ({ultimo.get_emocion_display()}). Requiere atencion."
+                mensaje=mensaje,
             )
+            _notificar_padres_alerta(estudiante, Alerta.TIPO_PUNTAJE_BAJO, mensaje)
 
     # Alerta por cambio brusco (diferencia >= 3 puntos entre hoy y ayer)
     if len(registros) >= 2:
@@ -237,12 +291,17 @@ def verificar_y_crear_alerta(estudiante):
                 fecha_creacion__date=hoy
             ).exists()
             if not ya_existe:
+                mensaje = (
+                    f"{estudiante.get_full_name()} tuvo un cambio emocional brusco: "
+                    f"de {registros[1].puntaje}/5 a {registros[0].puntaje}/5."
+                )
                 Alerta.objects.create(
                     estudiante=estudiante,
                     tipo=Alerta.TIPO_CAMBIO_BRUSCO,
                     prioridad=Alerta.PRIORIDAD_MEDIA,
-                    mensaje=f"{estudiante.get_full_name()} tuvo un cambio emocional brusco: de {registros[1].puntaje}/5 a {registros[0].puntaje}/5."
+                    mensaje=mensaje,
                 )
+                _notificar_padres_alerta(estudiante, Alerta.TIPO_CAMBIO_BRUSCO, mensaje)
 
 
 class EntradaDiario(models.Model):
@@ -571,13 +630,14 @@ class RetoGrupal(models.Model):
 
 class Notificacion(models.Model):
     TIPO_CHOICES = [
-        ('logro',       'Logro desbloqueado'),
-        ('mensaje',     'Nuevo mensaje'),
-        ('encuesta',    'Encuesta pendiente'),
-        ('reto',        'Nuevo reto'),
-        ('alerta',      'Alerta emocional'),
-        ('sistema',     'Sistema'),
-        ('citacion',    'Citación'),
+        ('logro',        'Logro desbloqueado'),
+        ('mensaje',      'Nuevo mensaje'),
+        ('encuesta',     'Encuesta pendiente'),
+        ('reto',         'Nuevo reto'),
+        ('alerta',       'Alerta emocional'),
+        ('alerta_padre', 'Alerta emocional (padre)'),
+        ('sistema',      'Sistema'),
+        ('citacion',     'Citación'),
     ]
     usuario    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificaciones')
     tipo       = models.CharField(max_length=15, choices=TIPO_CHOICES)

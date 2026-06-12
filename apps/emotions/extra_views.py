@@ -599,23 +599,47 @@ def nota_eliminar(request, pk):
 
 @login_required
 def citaciones_lista(request):
-    """Lista de citaciones — profesores ven las que crearon, estudiantes las suyas."""
+    """Lista de citaciones:
+    - Estudiantes: sus propias citaciones (próximas e historial)
+    - Padres: citaciones de sus hijos vinculados solamente
+    - Profesores/admin: todas las citaciones de la institución
+    """
     hoy = date.today()
+
     if request.user.es_estudiante:
-        proximas  = Citacion.objects.filter(
+        proximas = Citacion.objects.filter(
             estudiante=request.user, fecha__gte=hoy
-        ).exclude(estado='cancelada').select_related('profesor').order_by('fecha','hora')
-        pasadas   = Citacion.objects.filter(
+        ).exclude(estado='cancelada').select_related('profesor').order_by('fecha', 'hora')
+        pasadas = Citacion.objects.filter(
             estudiante=request.user, fecha__lt=hoy
-        ).select_related('profesor').order_by('-fecha','-hora')
+        ).select_related('profesor').order_by('-fecha', '-hora')
         context = {
             'proximas': proximas, 'pasadas': pasadas,
             'es_estudiante': True,
+            'es_padre': False,
         }
+
+    elif request.user.es_padre:
+        from apps.accounts.models import VinculoPadreHijo
+        ids_hijos = VinculoPadreHijo.objects.filter(
+            padre=request.user, activo=True
+        ).values_list('estudiante_id', flat=True)
+
+        proximas = Citacion.objects.filter(
+            estudiante_id__in=ids_hijos, fecha__gte=hoy
+        ).exclude(estado='cancelada').select_related('estudiante', 'profesor').order_by('fecha', 'hora')
+        pasadas = Citacion.objects.filter(
+            estudiante_id__in=ids_hijos, fecha__lt=hoy
+        ).select_related('estudiante', 'profesor').order_by('-fecha', '-hora')
+
+        context = {
+            'proximas': proximas, 'pasadas': pasadas,
+            'es_estudiante': False,
+            'es_padre': True,
+        }
+
     else:
-        # Profesores/admin
-        # Todos los profesores ven todas las citaciones de la institución
-        mis_cursos = Curso.objects.filter(activo=True)
+        # Profesores/admin: ven todas las citaciones de la institución
         proximas = Citacion.objects.filter(
             fecha__gte=hoy,
         ).exclude(estado='cancelada').select_related('estudiante', 'profesor').order_by('fecha', 'hora')
@@ -623,8 +647,9 @@ def citaciones_lista(request):
             fecha__lt=hoy,
         ).select_related('estudiante', 'profesor').order_by('-fecha', '-hora')
 
-        # Todos los estudiantes disponibles para el formulario de citación
-        estudiantes_disp = User.objects.filter(rol=User.ROL_ESTUDIANTE, activo=True).order_by('first_name', 'last_name')
+        estudiantes_disp = User.objects.filter(
+            rol=User.ROL_ESTUDIANTE, activo=True
+        ).order_by('first_name', 'last_name')
 
         context = {
             'proximas': proximas, 'pasadas': pasadas,
@@ -632,7 +657,9 @@ def citaciones_lista(request):
             'lugares': Citacion.LUGAR_CHOICES,
             'hoy': hoy,
             'es_estudiante': False,
+            'es_padre': False,
         }
+
     return render(request, 'emotions/citaciones.html', context)
 
 
@@ -705,6 +732,26 @@ def citacion_crear(request):
                 f'Estado: Pendiente de confirmación'
             ),
         )
+
+        # Notificación a los padres/acudientes del estudiante
+        from apps.accounts.models import VinculoPadreHijo
+        padres_vinculados = VinculoPadreHijo.objects.filter(
+            estudiante=estudiante, activo=True
+        ).select_related('padre')
+        for vinculo in padres_vinculados:
+            crear_notificacion(
+                usuario=vinculo.padre,
+                tipo='citacion',
+                titulo=f'Citación{urgente_txt} para {estudiante.get_full_name()} — {fecha.strftime("%d/%m/%Y")}',
+                cuerpo=(
+                    f'El/la Prof. {request.user.get_full_name()} ha citado a '
+                    f'{estudiante.get_full_name()} en {cita.get_lugar_display_full()} '
+                    f'el {fecha.strftime("%d de %B de %Y")} a las {hora.strftime("%H:%M")}. '
+                    f'Motivo: {motivo[:120]}'
+                ),
+                url='/accounts/padre/citaciones/',
+            )
+
         messages.success(request, f'Citación enviada a {estudiante.get_full_name()}.')
         return redirect('emotions:citaciones_lista')
 

@@ -68,7 +68,23 @@
     </div>
 
     <!-- Quién cita / quién es citado -->
-    {% if show_prof %}
+    {% if es_padre %}
+    {# Vista padre: muestra al estudiante Y al profesor #}
+    <div class="info-row">
+      <div class="info-ico"><i class="bi bi-person-fill"></i></div>
+      <div>
+        <div class="info-lbl">Estudiante citado</div>
+        <div class="info-val">{{ cita.estudiante.get_full_name }}</div>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-ico"><i class="bi bi-person-badge-fill"></i></div>
+      <div>
+        <div class="info-lbl">Convocado por</div>
+        <div class="info-val">{{ cita.profesor.get_full_name }}</div>
+      </div>
+    </div>
+    {% elif show_prof %}
     <div class="info-row">
       <div class="info-ico"><i class="bi bi-person-fill"></i></div>
       <div>

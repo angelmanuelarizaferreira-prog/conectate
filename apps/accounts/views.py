@@ -191,12 +191,19 @@ def panel_padre(request):
         destinatario=request.user, leido=False, remitente__rol=User.ROL_PROFESOR
     ).count()
 
+    # Notificaciones no leídas (alertas emocionales de hijos, citaciones, etc.)
+    from apps.emotions.models import Notificacion
+    notificaciones_no_leidas = Notificacion.objects.filter(
+        usuario=request.user, leida=False
+    ).count()
+
     context = {
         'hijos_data': hijos_data,
         'hoy': hoy,
         'tiene_hijos': len(hijos_data) > 0,
         'citaciones_proximas': citaciones_proximas,
         'mensajes_no_leidos': mensajes_no_leidos,
+        'notificaciones_no_leidas': notificaciones_no_leidas,
     }
     return render(request, 'accounts/panel_padre.html', context)
 

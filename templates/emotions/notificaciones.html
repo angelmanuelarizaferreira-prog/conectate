@@ -18,8 +18,15 @@
     <a href="{{ n.url }}" style="text-decoration:none;color:inherit;display:block">
     {% endif %}
     <div class="notif-item {% if not n.leida %}nueva{% endif %}">
-      <div class="notif-ico" style="background:{% if n.tipo == 'logro' %}rgba(255,179,64,.15){% elif n.tipo == 'mensaje' %}rgba(124,110,255,.15){% elif n.tipo == 'encuesta' %}rgba(0,212,170,.15){% elif n.tipo == 'reto' %}rgba(255,107,157,.15){% elif n.tipo == 'alerta' %}rgba(224,40,79,.15){% else %}rgba(136,132,168,.15){% endif %}">
-        {% if n.tipo == 'logro' %}<i class="bi bi-trophy-fill"></i>{% elif n.tipo == 'mensaje' %}<i class="bi bi-chat-dots-fill"></i>{% elif n.tipo == 'encuesta' %}<i class="bi bi-clipboard2-fill"></i>{% elif n.tipo == 'reto' %}<i class="bi bi-flag-fill"></i>{% elif n.tipo == 'alerta' %}<i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i>{% else %}<i class="bi bi-bell-fill"></i>{% endif %}
+      <div class="notif-ico" style="background:{% if n.tipo == 'logro' %}rgba(255,179,64,.15){% elif n.tipo == 'mensaje' %}rgba(124,110,255,.15){% elif n.tipo == 'encuesta' %}rgba(0,212,170,.15){% elif n.tipo == 'reto' %}rgba(255,107,157,.15){% elif n.tipo == 'alerta' %}rgba(224,40,79,.15){% elif n.tipo == 'alerta_padre' %}rgba(224,40,79,.15){% elif n.tipo == 'citacion' %}rgba(245,184,0,.15){% else %}rgba(136,132,168,.15){% endif %}">
+        {% if n.tipo == 'logro' %}<i class="bi bi-trophy-fill" style="color:#ffb340"></i>
+        {% elif n.tipo == 'mensaje' %}<i class="bi bi-chat-dots-fill" style="color:var(--accent)"></i>
+        {% elif n.tipo == 'encuesta' %}<i class="bi bi-clipboard2-fill" style="color:#00d4aa"></i>
+        {% elif n.tipo == 'reto' %}<i class="bi bi-flag-fill" style="color:#ff6b9d"></i>
+        {% elif n.tipo == 'alerta' %}<i class="bi bi-exclamation-triangle-fill" style="color:#f5b800"></i>
+        {% elif n.tipo == 'alerta_padre' %}<i class="bi bi-heart-pulse-fill" style="color:#e0284f"></i>
+        {% elif n.tipo == 'citacion' %}<i class="bi bi-calendar-event-fill" style="color:#f5b800"></i>
+        {% else %}<i class="bi bi-bell-fill"></i>{% endif %}
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:.88rem;margin-bottom:.2rem">{{ n.titulo }}</div>

@@ -1,7 +1,7 @@
 {% extends 'base/base.html' %}
 {% block title %}Citaciones{% endblock %}
-{% block page_title %}{% if es_estudiante %}Mis Citaciones{% else %}Gestión de Citaciones{% endif %}{% endblock %}
-{% block page_subtitle %}{% if es_estudiante %}Convocatorias oficiales de tus profesores{% else %}Envía y gestiona citaciones a estudiantes{% endif %}{% endblock %}
+{% block page_title %}{% if es_estudiante %}Mis Citaciones{% elif es_padre %}Citaciones de mis hijos{% else %}Gestión de Citaciones{% endif %}{% endblock %}
+{% block page_subtitle %}{% if es_estudiante %}Convocatorias oficiales de tus profesores{% elif es_padre %}Historial completo de citaciones — solo las de tus hijos vinculados{% else %}Envía y gestiona citaciones a estudiantes{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -152,7 +152,7 @@ body.dark .rpt-foot{background:rgba(157,143,255,.02)}
 {% block content %}
 <div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem">
 
-{% if not es_estudiante %}
+{% if not es_estudiante and not es_padre %}
 <!-- ══════════════════ VISTA PROFESOR ══════════════════ -->
 
   <div style="display:grid;grid-template-columns:1fr 360px;gap:1.5rem;align-items:start">
@@ -307,6 +307,71 @@ body.dark .rpt-foot{background:rgba(157,143,255,.02)}
   </div>
 
 {% else %}
+<!-- ══════════════════ VISTA PADRE / ACUDIENTE ══════════════════ -->
+
+  <div style="background:linear-gradient(135deg,#1a1440 0%,#2d1f6e 100%);border-radius:var(--r);padding:1.4rem 1.75rem;display:flex;align-items:center;gap:1rem" class="fade-up">
+    <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">
+      <i class="bi bi-calendar-event-fill" style="color:#f5b800"></i>
+    </div>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:1rem;color:#fff;font-weight:700">Citaciones de mis hijos</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-top:2px">Solo ves las citaciones de los estudiantes vinculados a tu cuenta</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:.65rem">
+      <div style="text-align:center;background:rgba(255,255,255,.08);border-radius:10px;padding:.5rem .9rem">
+        <div style="font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;color:#fff">{{ proximas|length }}</div>
+        <div style="font-size:.62rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.6px">Próximas</div>
+      </div>
+      <div style="text-align:center;background:rgba(255,255,255,.08);border-radius:10px;padding:.5rem .9rem">
+        <div style="font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;color:#fff">{{ pasadas|length }}</div>
+        <div style="font-size:.62rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.6px">Historial</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="citaciones-tabs">
+    <button class="ctab active" id="tabProx" onclick="showCitTab('prox',this)">
+      <i class="bi bi-calendar-check-fill"></i> Próximas ({{ proximas|length }})
+    </button>
+    <button class="ctab" id="tabPas" onclick="showCitTab('pas',this)">
+      <i class="bi bi-clock-history"></i> Historial ({{ pasadas|length }})
+    </button>
+  </div>
+
+  <div id="panelProx">
+    {% if proximas %}
+      <div style="display:flex;flex-direction:column;gap:1.1rem">
+      {% for cita in proximas %}
+      {% include 'emotions/_cita_card.html' with cita=cita show_prof=True es_est=False es_padre=True %}
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="cita-empty">
+        <div class="cita-empty-ico"><i class="bi bi-calendar-check-fill"></i></div>
+        <div style="font-weight:700;font-size:1rem;margin-bottom:.35rem">Sin citaciones próximas</div>
+        <div style="font-size:.85rem">Cuando un profesor convoque a uno de tus hijos, aparecerá aquí</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="panelPas" style="display:none">
+    {% if pasadas %}
+      <div style="display:flex;flex-direction:column;gap:1.1rem">
+      {% for cita in pasadas %}
+      {% include 'emotions/_cita_card.html' with cita=cita show_prof=True es_est=False es_padre=True %}
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="cita-empty">
+        <div class="cita-empty-ico"><i class="bi bi-clock-history"></i></div>
+        <div style="font-weight:700">Sin historial de citaciones</div>
+      </div>
+    {% endif %}
+  </div>
+
+{% endif %}
+
+{% if es_estudiante %}
 <!-- ══════════════════ VISTA ESTUDIANTE ══════════════════ -->
 
   <div class="citaciones-tabs">
