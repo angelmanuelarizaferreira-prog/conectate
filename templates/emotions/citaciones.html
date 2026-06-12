@@ -213,7 +213,7 @@ body.dark .rpt-foot{background:rgba(157,143,255,.02)}
         <form method="post" action="{% url 'emotions:citacion_crear' %}">
           {% csrf_token %}
 
-          <!-- Estudiante con buscador -->
+          <!-- Estudiante con buscador + select nativo oculto -->
           <div style="margin-bottom:.85rem">
             <div class="field-label">Estudiante</div>
             <div style="position:relative">
@@ -223,7 +223,7 @@ body.dark .rpt-foot{background:rgba(157,143,255,.02)}
                      onfocus="mostrarDropdown()"
                      style="padding-right:2rem">
               <i class="bi bi-search" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:.85rem"></i>
-              <input type="hidden" name="estudiante" id="estSelId" required>
+              <input type="hidden" name="estudiante" id="estSelId">
               <div id="estDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:999;
                    background:var(--card);border:1.5px solid var(--border);border-radius:12px;
                    box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;margin-top:4px">
@@ -235,6 +235,15 @@ body.dark .rpt-foot{background:rgba(157,143,255,.02)}
                 </div>
                 {% endfor %}
               </div>
+            </div>
+            <div style="margin-top:.4rem">
+              <span style="font-size:.7rem;color:var(--muted)">¿No aparece el buscador? Usa esta lista:</span>
+              <select id="estSelectFallback" class="field-input field-select" style="margin-top:.3rem" onchange="seleccionarEstSelect(this)">
+                <option value="">-- Selecciona un estudiante --</option>
+                {% for est in estudiantes_disp %}
+                <option value="{{ est.pk }}">{{ est.get_full_name }}</option>
+                {% endfor %}
+              </select>
             </div>
           </div>
 
@@ -446,6 +455,14 @@ function seleccionarEst(el){
   document.getElementById('estBuscador').value = el.dataset.name;
   document.getElementById('estSelId').value = el.dataset.id;
   document.getElementById('estDropdown').style.display = 'none';
+  // sincronizar select fallback
+  const fb = document.getElementById('estSelectFallback');
+  if(fb) fb.value = el.dataset.id;
+}
+function seleccionarEstSelect(sel){
+  document.getElementById('estSelId').value = sel.value;
+  const opt = sel.options[sel.selectedIndex];
+  if(opt && sel.value) document.getElementById('estBuscador').value = opt.text;
 }
 // Cerrar dropdown al hacer clic afuera
 document.addEventListener('click', e => {
