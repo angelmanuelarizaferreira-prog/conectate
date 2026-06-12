@@ -407,11 +407,8 @@ body.dark .idx-entry.active{background:rgba(157,143,255,.1);border-color:rgba(15
     <a href="{% url 'accounts:panel_padre' %}" class="sb-link {% if request.resolver_match.url_name == 'panel_padre' or request.resolver_match.url_name == 'hijo_detalle' or request.path == '/dashboard/' %}active{% endif %}">
       <i class="bi bi-grid-1x2-fill"></i> Dashboard familiar
     </a>
-    <a href="{% url 'emotions:citaciones_lista' %}" class="sb-link {% if request.resolver_match.url_name == 'citaciones_lista' %}active{% endif %}">
-      <i class="bi bi-calendar-event-fill"></i> Historial de citaciones
-    </a>
-    <a href="{% url 'emotions:notificaciones' %}" class="sb-link {% if request.resolver_match.url_name == 'notificaciones' %}active{% endif %}">
-      <i class="bi bi-bell-fill"></i> Notificaciones
+    <a href="{% url 'accounts:padre_citaciones' %}" class="sb-link {% if request.resolver_match.url_name == 'padre_citaciones' %}active{% endif %}">
+      <i class="bi bi-calendar-event-fill"></i> Citaciones
     </a>
     <a href="{% url 'accounts:padre_mensajes' %}" class="sb-link {% if request.resolver_match.url_name == 'padre_mensajes' %}active{% endif %}">
       <i class="bi bi-chat-dots-fill"></i> Mensajes al profesor
@@ -459,6 +456,10 @@ body.dark .idx-entry.active{background:rgba(157,143,255,.1);border-color:rgba(15
     </a>
     <a href="{% url 'emotions:exportar_datos' %}" class="sb-link">
       <i class="bi bi-download"></i> Exportar mis datos
+    </a>
+    <a href="{% url 'emotions:citaciones_lista' %}" class="sb-link {% if request.resolver_match.url_name == 'citaciones_lista' %}active{% endif %}">
+      <i class="bi bi-calendar-event-fill"></i> Mis citaciones
+      <span id="citBadgeEst" class="sb-badge" style="display:none"></span>
     </a>
 
     <div class="sb-section">Aprendizaje</div>
@@ -650,7 +651,7 @@ function toggleDark(){
     }).catch(()=>{});
   fetch('/emotions/citaciones/pendientes/')
     .then(r=>r.json()).then(d=>{
-      const c = document.getElementById('citBadge');
+      const c = document.getElementById('citBadgeEst');
       if(c){ c.textContent=d.count; c.style.display= d.count>0?'inline':'none'; }
     }).catch(()=>{});
   setTimeout(checkMsgs, 60000);
