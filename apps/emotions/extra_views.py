@@ -670,7 +670,7 @@ def citacion_crear(request):
         return HttpResponseForbidden()
 
     if request.method == 'POST':
-        est_pk    = request.POST.get('estudiante')
+        est_pk    = (request.POST.get('estudiante') or '').strip()
         fecha_str = request.POST.get('fecha','')
         hora_str  = request.POST.get('hora','')
         lugar     = request.POST.get('lugar','psicologia')
@@ -679,7 +679,11 @@ def citacion_crear(request):
         urgente   = request.POST.get('es_urgente') == '1'
         notas     = request.POST.get('notas_prof','').strip()
 
-        estudiante = get_object_or_404(User, pk=est_pk, rol=User.ROL_ESTUDIANTE)
+        if not est_pk or not est_pk.isdigit():
+            messages.error(request, 'Debes seleccionar un estudiante de la lista desplegable.')
+            return redirect('emotions:citaciones_lista')
+
+        estudiante = get_object_or_404(User, pk=int(est_pk), rol=User.ROL_ESTUDIANTE)
 
         try:
             from datetime import date as date_cls, time as time_cls, datetime as dt_cls
